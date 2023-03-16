@@ -4123,6 +4123,10 @@ void Guest::UpdateRideEnterVehicle()
 
             vehicle->ApplyMass(Mass);
             vehicle->Invalidate();
+            if (ride->mode == RideMode::WaterSlide)
+            {
+                vehicle->ClearFlag(VehicleFlags::Intangible);
+            }
 
             MoveTo({ kLocationNull, 0, 0 });
 
@@ -4269,6 +4273,11 @@ void Guest::UpdateRideLeaveVehicle()
 
             platformLocation.x = vehicle->x + xShift * shiftMultiplier;
             platformLocation.y = vehicle->y + yShift * shiftMultiplier;
+
+            if (ride->mode == RideMode::WaterSlide && vehicle->num_peeps == 0)
+            {
+                vehicle->ReturnToEntranceStation();
+            }
 
             PeepGoToRideExit(
                 this, *ride, platformLocation.x, platformLocation.y, platformLocation.z, platformLocation.direction);

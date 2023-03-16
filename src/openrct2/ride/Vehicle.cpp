@@ -2575,6 +2575,12 @@ void Vehicle::UpdateDeparting()
             if (velocity <= 131940)
                 acceleration = 3298;
             break;
+        case RideMode::WaterSlide:
+            if (velocity <= 131940)
+                acceleration = 3298;
+
+            EnableCollisionsForTrain();
+            break;
         default:
         {
             // This is workaround for multiple compilation errors of type "enumeration value ‘RIDE_MODE_*' not handled
@@ -6543,7 +6549,7 @@ bool Vehicle::UpdateMotionCollisionDetection(const CoordsXYZ& loc, EntityId* oth
             return false;
 
         Vehicle* collideVehicle = GetEntity<Vehicle>(*otherVehicleIndex);
-        if (collideVehicle == nullptr)
+        if (collideVehicle == nullptr || collideVehicle->HasFlag(VehicleFlags::CollisionDisabled))
             return false;
 
         if (this == collideVehicle)
@@ -8903,6 +8909,32 @@ void Vehicle::EnableCollisionsForTrain()
     for (auto vehicle = this; vehicle != nullptr; vehicle = GetEntity<Vehicle>(vehicle->next_vehicle_on_train))
     {
         vehicle->ClearFlag(VehicleFlags::CollisionDisabled);
+    }
+}
+
+void Vehicle::ReturnToEntranceStation()
+{
+    // Disable Collision
+    assert(IsHead());
+    for (auto vehicle = this; vehicle != nullptr; vehicle = GetEntity<Vehicle>(vehicle->next_vehicle_on_train))
+    {
+        vehicle->SetFlag(VehicleFlags::CollisionDisabled);
+        vehicle->SetFlag(VehicleFlags::Intangible);
+    }
+    // Teleport to entrance
+    for (auto& station : GetRide()->GetStations())
+    {
+        if (!station.Entrance.IsNull())
+        {
+            CoordsXYZ stationCoords = { station.Start, station.GetBaseZ() };
+            MoveTo(stationCoords);
+            TrackLocation = GetLocation();
+            auto trackElement = MapGetTrackElementAt(GetLocation());
+            current_station = trackElement->GetStationIndex();
+            track_progress = 15;
+            SetState(Vehicle::Status::MovingToEndOfStation);
+            break;
+        }
     }
 }
 
