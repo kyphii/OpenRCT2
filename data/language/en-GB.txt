@@ -3794,3 +3794,4 @@ STR_6727    :Dive Loop (left)
 STR_6728    :Dive Loop (right)
 STR_6729    :Water slide mode
 STR_6730    :Waiting
+STR_6731    :Unable to operate without exactly two stations in this mode
