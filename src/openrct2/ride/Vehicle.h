@@ -98,7 +98,8 @@ struct Vehicle : EntityBase
         Operating1A,
         Stopping1B,
         UnloadingPassengers1C,
-        StoppedByBlockBrakes
+        StoppedByBlockBrakes,
+        WaterSlideWaiting
     };
 
     Type SubType;
@@ -232,7 +233,8 @@ struct Vehicle : EntityBase
     Vehicle* TrainTail() const;
     void UpdateAnimationAnimalFlying();
     void EnableCollisionsForTrain();
-    void ReturnToEntranceStation();
+
+    void WaterSlideSetWaiting();
     /**
      * Instantly moves the specific car forward or backwards along the track.
      */
@@ -320,6 +322,7 @@ private:
     void UpdateWaitingForCableLift();
     void UpdateShowingFilm();
     void UpdateDoingCircusShow();
+    void UpdateWaterSlideWaiting();
     void UpdateCrossings() const;
     void UpdateSound();
     void GetLiftHillSound(const Ride& curRide, SoundIdVolume& curSound);
@@ -464,7 +467,7 @@ namespace OpenRCT2::VehicleFlags
                                                   // an individual car on a train
     constexpr uint32_t Crashed = (1 << 15);       // Car displays as smoke plume
     constexpr uint32_t CarIsReversed = (1 << 16); // Car is displayed running backwards
-    constexpr uint32_t Intangible = (1 << 17);    // Car is invisible and cannot collide
+    constexpr uint32_t Invisible = (1 << 17);    // Vehicle paint is skipped
 } // namespace OpenRCT2::VehicleFlags
 
 enum

@@ -4322,7 +4322,7 @@ void Vehicle::Paint(PaintSession& session, int32_t imageDirection) const
             session, ImageId(SPR_WATER_PARTICLES_DENSE_0 + animation_frame), { 0, 0, z }, { { 0, 0, z + 2 }, { 1, 1, 0 } });
         return;
     }
-    else if (HasFlag(VehicleFlags::Intangible))
+    else if (HasFlag(VehicleFlags::Invisible))
     {
         return;
     }

@@ -1334,6 +1334,10 @@ void Vehicle::Update()
             break;
         case Vehicle::Status::DoingCircusShow:
             UpdateDoingCircusShow();
+            break;
+        case Vehicle::Status::WaterSlideWaiting:
+            UpdateWaterSlideWaiting();
+            break;
         default:
             break;
     }
@@ -4487,6 +4491,27 @@ void Vehicle::UpdateDoingCircusShow()
     {
         SetState(Vehicle::Status::Arriving);
         var_C0 = 0;
+    }
+}
+
+void Vehicle::UpdateWaterSlideWaiting() {
+    for (auto& station : GetRide()->GetStations())
+    {
+        if (!station.Entrance.IsNull() && station.TrainAtStation == RideStation::NO_TRAIN)
+        {
+            auto prevTrain = GetEntity<Vehicle>(prev_vehicle_on_ride);
+            if (prevTrain != nullptr && !prevTrain->HasFlag(VehicleFlags::CollisionDisabled))
+            {
+                CoordsXYZ stationCoords = { station.Start, station.GetBaseZ() };
+                MoveTo(stationCoords);
+                TrackLocation = GetLocation();
+                auto trackElement = MapGetTrackElementAt(GetLocation());
+                current_station = trackElement->GetStationIndex();
+                track_progress = 15;
+                SetState(Vehicle::Status::MovingToEndOfStation);
+            }
+            break;
+        }
     }
 }
 
@@ -8912,29 +8937,15 @@ void Vehicle::EnableCollisionsForTrain()
     }
 }
 
-void Vehicle::ReturnToEntranceStation()
+void Vehicle::WaterSlideSetWaiting()
 {
     // Disable Collision
     assert(IsHead());
     for (auto vehicle = this; vehicle != nullptr; vehicle = GetEntity<Vehicle>(vehicle->next_vehicle_on_train))
     {
         vehicle->SetFlag(VehicleFlags::CollisionDisabled);
-        vehicle->SetFlag(VehicleFlags::Intangible);
-    }
-    // Teleport to entrance
-    for (auto& station : GetRide()->GetStations())
-    {
-        if (!station.Entrance.IsNull())
-        {
-            CoordsXYZ stationCoords = { station.Start, station.GetBaseZ() };
-            MoveTo(stationCoords);
-            TrackLocation = GetLocation();
-            auto trackElement = MapGetTrackElementAt(GetLocation());
-            current_station = trackElement->GetStationIndex();
-            track_progress = 15;
-            SetState(Vehicle::Status::MovingToEndOfStation);
-            break;
-        }
+        SetState(Vehicle::Status::WaterSlideWaiting);
+        vehicle->SetFlag(VehicleFlags::Invisible);
     }
 }
 
