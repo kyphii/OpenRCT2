@@ -235,7 +235,7 @@ struct Vehicle : EntityBase
     void EnableCollisionsForTrain();
 
     void WaterSlideSetWaiting();
-    void WaterSlideTeleport();
+    void WaterSlideRespawnVehicle();
     void WaterSlideSetReady();
 
     /**
