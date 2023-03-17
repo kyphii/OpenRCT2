@@ -5161,8 +5161,16 @@ void Ride::UpdateMaxVehicles()
                 maxNumTrains = 1;
                 break;
             case RideMode::WaterSlide:
-                maxNumTrains = 4;
+                {
+                int32_t trainLength = 0;
+                for (int32_t i = 0; i < newCarsPerTrain; i++)
+                {
+                    const auto& carEntry = rideEntry->Cars[RideEntryGetVehicleAtPosition(subtype, newCarsPerTrain, i)];
+                    trainLength += carEntry.spacing;
+                }
+                maxNumTrains = (RideGetTrackLength(*this) / (trainLength >> 9)) + 2;
                 break;
+                }
             default:
                 // Calculate maximum number of trains
                 int32_t trainLength = 0;
