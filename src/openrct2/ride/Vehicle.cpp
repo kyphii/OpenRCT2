@@ -4495,23 +4495,10 @@ void Vehicle::UpdateDoingCircusShow()
 }
 
 void Vehicle::UpdateWaterSlideWaiting() {
-    for (auto& station : GetRide()->GetStations())
+    auto prevTrain = GetEntity<Vehicle>(prev_vehicle_on_ride);
+    if (prevTrain != nullptr && !prevTrain->HasFlag(VehicleFlags::CollisionDisabled))
     {
-        if (!station.Entrance.IsNull() && station.TrainAtStation == RideStation::NO_TRAIN)
-        {
-            auto prevTrain = GetEntity<Vehicle>(prev_vehicle_on_ride);
-            if (prevTrain != nullptr && !prevTrain->HasFlag(VehicleFlags::CollisionDisabled))
-            {
-                CoordsXYZ stationCoords = { station.Start, station.GetBaseZ() };
-                MoveTo(stationCoords);
-                TrackLocation = GetLocation();
-                auto trackElement = MapGetTrackElementAt(GetLocation());
-                current_station = trackElement->GetStationIndex();
-                track_progress = 15;
-                SetState(Vehicle::Status::MovingToEndOfStation);
-            }
-            break;
-        }
+        WaterSlideTeleport();
     }
 }
 
@@ -8944,8 +8931,36 @@ void Vehicle::WaterSlideSetWaiting()
     for (auto vehicle = this; vehicle != nullptr; vehicle = GetEntity<Vehicle>(vehicle->next_vehicle_on_train))
     {
         vehicle->SetFlag(VehicleFlags::CollisionDisabled);
+        // vehicle->SetFlag(VehicleFlags::Invisible);
         SetState(Vehicle::Status::WaterSlideWaiting);
-        vehicle->SetFlag(VehicleFlags::Invisible);
+    }
+}
+
+void Vehicle::WaterSlideTeleport()
+{
+    for (auto& station : GetRide()->GetStations())
+    {
+        if (!station.Entrance.IsNull() && station.TrainAtStation == RideStation::NO_TRAIN)
+        {
+            CoordsXYZ stationCoords = { station.Start, station.GetBaseZ() };
+            MoveTo(stationCoords);
+            TrackLocation = GetLocation();
+            auto trackElement = MapGetTrackElementAt(GetLocation());
+            current_station = trackElement->GetStationIndex();
+            // Need to allow the vehicle to move to align correctly
+            track_progress = 0;
+            SetState(Vehicle::Status::MovingToEndOfStation);
+            break;
+        }
+    }
+}
+
+void Vehicle::WaterSlideSetReady()
+{
+    assert(IsHead());
+    for (auto vehicle = this; vehicle != nullptr; vehicle = GetEntity<Vehicle>(vehicle->next_vehicle_on_train))
+    {
+        ClearFlag(VehicleFlags::Invisible);
     }
 }
 

@@ -3238,16 +3238,13 @@ static Vehicle* VehicleCreateCar(
     vehicle->SubType = carIndex == 0 ? Vehicle::Type::Head : Vehicle::Type::Tail;
     vehicle->var_44 = Numerics::ror32(carEntry.spacing, 10) & 0xFFFF;
 
-    if (ride.mode != RideMode::WaterSlide)
-    {
-        const auto halfSpacing = carEntry.spacing >> 1;
-        *remainingDistance -= halfSpacing;
-        vehicle->remaining_distance = *remainingDistance;
+    const auto halfSpacing = carEntry.spacing >> 1;
+    *remainingDistance -= halfSpacing;
+    vehicle->remaining_distance = *remainingDistance;
 
-        if (!(carEntry.flags & CAR_ENTRY_FLAG_GO_KART))
-        {
-            *remainingDistance -= halfSpacing;
-        }
+    if (!(carEntry.flags & CAR_ENTRY_FLAG_GO_KART))
+    {
+        *remainingDistance -= halfSpacing;
     }
 
     // Loc6DD9A5:
@@ -3386,10 +3383,7 @@ static Vehicle* VehicleCreateCar(
             }
         }
 
-        if (ride.mode != RideMode::WaterSlide)
-        {
-            chosenLoc += CoordsXYZ{ word_9A2A60[direction], rtd.Heights.VehicleZOffset };
-        }
+        chosenLoc += CoordsXYZ{ word_9A2A60[direction], rtd.Heights.VehicleZOffset };
 
         vehicle->current_station = trackElement->GetStationIndex();
 
@@ -3667,13 +3661,17 @@ ResultWithMessage Ride::CreateVehicles(const CoordsXYE& element, bool isApplying
                     vehicle->UpdateTrackMotion(nullptr);
                 }
 
-                if (mode != RideMode::WaterSlide)
+                if (mode == RideMode::WaterSlide)
                 {
-                    vehicle->EnableCollisionsForTrain();
+                    vehicle->WaterSlideSetWaiting();
+                    if (i == 0)
+                    {
+                        vehicle->WaterSlideTeleport();
+                    }
                 }
                 else
                 {
-                    vehicle->SetFlag(VehicleFlags::Invisible);
+                    vehicle->EnableCollisionsForTrain();
                 }
             }
         }

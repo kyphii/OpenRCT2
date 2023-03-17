@@ -235,6 +235,9 @@ struct Vehicle : EntityBase
     void EnableCollisionsForTrain();
 
     void WaterSlideSetWaiting();
+    void WaterSlideTeleport();
+    void WaterSlideSetReady();
+
     /**
      * Instantly moves the specific car forward or backwards along the track.
      */
