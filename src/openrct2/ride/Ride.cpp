@@ -5048,7 +5048,7 @@ static int32_t RideGetTrackLength(const Ride& ride)
     for (const auto& station : ride.GetStations())
     {
         trackStart = station.GetStart();
-        if (trackStart.IsNull())
+        if (trackStart.IsNull() || station.Entrance.IsNull())
             continue;
 
         tileElement = MapGetFirstElementAt(trackStart);
@@ -5186,14 +5186,14 @@ void Ride::UpdateMaxVehicles()
                 break;
             case RideMode::WaterSlide:
                 {
-                int32_t trainLength = 0;
-                for (int32_t i = 0; i < newCarsPerTrain; i++)
-                {
-                    const auto& carEntry = rideEntry->Cars[RideEntryGetVehicleAtPosition(subtype, newCarsPerTrain, i)];
-                    trainLength += carEntry.spacing;
-                }
-                maxNumTrains = (RideGetTrackLength(*this) / (trainLength >> 9)) + 2;
-                break;
+                    int32_t trainLength = 0;
+                    for (int32_t i = 0; i < newCarsPerTrain; i++)
+                    {
+                        const auto& carEntry = rideEntry->Cars[RideEntryGetVehicleAtPosition(subtype, newCarsPerTrain, i)];
+                        trainLength += carEntry.spacing;
+                    }
+                    maxNumTrains = std::min((RideGetTrackLength(*this) / (trainLength >> 9)) + 2, int32_t(OpenRCT2::Limits::MaxTrainsPerRide));
+                    break;
                 }
             default:
                 // Calculate maximum number of trains
