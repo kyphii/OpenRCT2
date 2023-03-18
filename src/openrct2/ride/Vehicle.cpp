@@ -4496,7 +4496,7 @@ void Vehicle::UpdateDoingCircusShow()
 
 void Vehicle::UpdateWaterSlideWaiting() {
     auto prevTrain = GetEntity<Vehicle>(prev_vehicle_on_ride);
-    if (prevTrain != nullptr && !prevTrain->HasFlag(VehicleFlags::CollisionDisabled))
+    if ((prevTrain != nullptr && !prevTrain->HasFlag(VehicleFlags::CollisionDisabled)) || GetRide()->NumTrains == 1)
     {
         WaterSlideRespawnVehicle();
     }
