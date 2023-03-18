@@ -8934,6 +8934,13 @@ void Vehicle::WaterSlideSetWaiting()
         vehicle->SetFlag(VehicleFlags::Invisible);
     }
     GetHead()->SetState(Vehicle::Status::WaterSlideWaiting);
+
+    //Bypass station count check for test results
+    //If this is not done, each boat has to cycle twice before results appear
+    if (!(GetRide()->lifecycle_flags & RIDE_LIFECYCLE_TESTED) && (HasFlag(VehicleFlags::Testing)))
+    {
+        UpdateTestFinish();
+    }
 }
 
 void Vehicle::WaterSlideRespawnVehicle()
@@ -8953,15 +8960,6 @@ void Vehicle::WaterSlideRespawnVehicle()
         auto trackElement = MapGetTrackElementAt(stationCoords);
         
         GetRide()->VehicleRespawnTrain(*GetRide(), GetHead(), stationCoords, trackElement);
-    }
-
-    // Cheat the test system, otherwise every boat will need to cycle twice before test results
-    // Test results only trigger once the boat respawns at the top, instead of when it reaches the end
-    // Can't do anything about that
-    if (!(GetRide()->lifecycle_flags & RIDE_LIFECYCLE_TESTED) && (HasFlag(VehicleFlags::Testing)))
-    {
-        GetRide()->current_test_segment++;
-        GetRide()->current_test_station = current_station;
     }
 }
 
