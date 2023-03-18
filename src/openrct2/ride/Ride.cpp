@@ -3779,22 +3779,23 @@ void Ride::MoveTrainsToBlockBrakes(const CoordsXYZ& firstBlockPosition, TrackEle
 
 void Ride::VehicleRespawnTrain(const Ride& ride, Vehicle* trainHead, CoordsXYZ trainPos, TrackElement* trackElement)
 {
+    int32_t remainingDistance = 0;
+    int32_t direction = trackElement->GetDirection();
+    auto posOffset = trainPos + CoordsXYZ{ word_9A2A60[direction], ride.GetRideTypeDescriptor().Heights.VehicleZOffset };
     for (auto vehicle = trainHead; vehicle != nullptr; vehicle = GetEntity<Vehicle>(vehicle->next_vehicle_on_train))
     {
-        vehicle->TrackSubposition = VehicleTrackSubposition::Default;
-        vehicle->TrackLocation = trainPos;
+        int32_t halfSpacing = vehicle->Entry()->spacing >> 1;
+        remainingDistance -= halfSpacing;
+        vehicle->remaining_distance = remainingDistance;
+        remainingDistance -= halfSpacing;
 
-        int32_t direction = trackElement->GetDirection();
         vehicle->sprite_direction = direction << 3;
-        const auto& rtd = ride.GetRideTypeDescriptor();
-        trainPos += CoordsXYZ{ word_9A2A60[direction], rtd.Heights.VehicleZOffset };
-
-        vehicle->current_station = trackElement->GetStationIndex();
-
-        vehicle->MoveTo(trainPos);
+        vehicle->TrackLocation = trainPos;
+        vehicle->MoveTo(posOffset);
         vehicle->SetTrackType(trackElement->GetTrackType());
         vehicle->SetTrackDirection(direction);
         vehicle->track_progress = 31;
+        vehicle->current_station = trackElement->GetStationIndex();
 
         vehicle->SetState(Vehicle::Status::MovingToEndOfStation);
     }

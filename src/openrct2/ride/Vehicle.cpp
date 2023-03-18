@@ -8926,13 +8926,12 @@ void Vehicle::EnableCollisionsForTrain()
 
 void Vehicle::WaterSlideSetWaiting()
 {
-    // Disable Collision
     for (auto vehicle = GetHead(); vehicle != nullptr; vehicle = GetEntity<Vehicle>(vehicle->next_vehicle_on_train))
     {
         vehicle->SetFlag(VehicleFlags::CollisionDisabled);
-        // vehicle->SetFlag(VehicleFlags::Invisible);
-        SetState(Vehicle::Status::WaterSlideWaiting);
+        vehicle->SetFlag(VehicleFlags::Invisible);
     }
+    GetHead()->SetState(Vehicle::Status::WaterSlideWaiting);
 }
 
 void Vehicle::WaterSlideRespawnVehicle()
@@ -8953,13 +8952,22 @@ void Vehicle::WaterSlideRespawnVehicle()
         
         GetRide()->VehicleRespawnTrain(*GetRide(), GetHead(), stationCoords, trackElement);
     }
+
+    // Cheat the test system, otherwise every boat will need to cycle twice before test results
+    // Test results only trigger once the boat respawns at the top, instead of when it reaches the end
+    // Can't do anything about that
+    if (!(GetRide()->lifecycle_flags & RIDE_LIFECYCLE_TESTED) && (HasFlag(VehicleFlags::Testing)))
+    {
+        GetRide()->current_test_segment++;
+        GetRide()->current_test_station = current_station;
+    }
 }
 
 void Vehicle::WaterSlideSetReady()
 {
     for (auto vehicle = GetHead(); vehicle != nullptr; vehicle = GetEntity<Vehicle>(vehicle->next_vehicle_on_train))
     {
-        ClearFlag(VehicleFlags::Invisible);
+        vehicle->ClearFlag(VehicleFlags::Invisible);
     }
 }
 
