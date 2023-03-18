@@ -3487,6 +3487,13 @@ void Vehicle::UpdateUnloadingPassengers()
     {
         UpdateTestFinish();
     }
+
+    if (curRide->mode == RideMode::WaterSlide)
+    {
+        this->WaterSlideSetWaiting();
+        return;
+    }
+
     SetState(Vehicle::Status::MovingToEndOfStation);
 }
 

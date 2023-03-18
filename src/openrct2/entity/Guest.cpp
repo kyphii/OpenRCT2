@@ -4274,11 +4274,6 @@ void Guest::UpdateRideLeaveVehicle()
             platformLocation.x = vehicle->x + xShift * shiftMultiplier;
             platformLocation.y = vehicle->y + yShift * shiftMultiplier;
 
-            if (ride->mode == RideMode::WaterSlide && vehicle->num_peeps == 0)
-            {
-                vehicle->WaterSlideSetWaiting();
-            }
-
             PeepGoToRideExit(
                 this, *ride, platformLocation.x, platformLocation.y, platformLocation.z, platformLocation.direction);
             return;
