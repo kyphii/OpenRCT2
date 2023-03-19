@@ -5185,16 +5185,17 @@ void Ride::UpdateMaxVehicles()
                 maxNumTrains = 1;
                 break;
             case RideMode::WaterSlide:
+            {
+                int32_t trainLength = 0;
+                for (int32_t i = 0; i < newCarsPerTrain; i++)
                 {
-                    int32_t trainLength = 0;
-                    for (int32_t i = 0; i < newCarsPerTrain; i++)
-                    {
-                        const auto& carEntry = rideEntry->Cars[RideEntryGetVehicleAtPosition(subtype, newCarsPerTrain, i)];
-                        trainLength += carEntry.spacing;
-                    }
-                    maxNumTrains = std::min((RideGetTrackLength(*this) / (trainLength >> 9)) + 2, int32_t(OpenRCT2::Limits::MaxTrainsPerRide));
-                    break;
+                    const auto& carEntry = rideEntry->Cars[RideEntryGetVehicleAtPosition(subtype, newCarsPerTrain, i)];
+                    trainLength += carEntry.spacing;
                 }
+                maxNumTrains = std::min(
+                    (RideGetTrackLength(*this) / (trainLength >> 9)) + 2, int32_t(OpenRCT2::Limits::MaxTrainsPerRide));
+                break;
+            }
             default:
                 // Calculate maximum number of trains
                 int32_t trainLength = 0;
