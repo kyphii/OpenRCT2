@@ -3789,7 +3789,7 @@ void Ride::VehicleRespawnTrain(const Ride& ride, Vehicle* trainHead, CoordsXYZ t
         vehicle->remaining_distance = remainingDistance;
         remainingDistance -= halfSpacing;
 
-        vehicle->sprite_direction = direction << 3;
+        vehicle->Orientation = direction << 3;
         vehicle->TrackLocation = trainPos;
         vehicle->MoveTo(posOffset);
         vehicle->SetTrackType(trackElement->GetTrackType());
