@@ -41,6 +41,8 @@ enum {
     WIDX_PRE_RESEARCHED_SCROLL,
     WIDX_RESEARCH_ORDER_SCROLL,
     WIDX_PREVIEW,
+    WIDX_CATEGORY_ORDER,
+    WIDX_CATEGORY_SHUFFLE,
     WIDX_MOVE_ITEMS_TO_TOP,
     WIDX_MOVE_ITEMS_TO_BOTTOM,
     WIDX_RANDOM_SHUFFLE
@@ -53,6 +55,8 @@ static Widget _inventionListWidgets[] = {
     MakeWidget({  4,  56}, {368, 161}, WindowWidgetType::Scroll,  WindowColour::Secondary, SCROLL_VERTICAL                            ),
     MakeWidget({  4, 231}, {368, 157}, WindowWidgetType::Scroll,  WindowColour::Secondary, SCROLL_VERTICAL                            ),
     MakeWidget({431, 106}, {114, 114}, WindowWidgetType::FlatBtn, WindowColour::Secondary                                             ),
+    MakeWidget({375, 315}, {220,  14}, WindowWidgetType::Button,  WindowColour::Secondary, STR_INVENTIONS_CATEGORY_ORDER,  STR_INVENTIONS_CATEGORY_ORDER_TIP    ),
+    MakeWidget({375, 330}, {220,  14}, WindowWidgetType::Button,  WindowColour::Secondary, STR_INVENTIONS_CATEGORY_SHUFFLE,  STR_INVENTIONS_CATEGORY_SHUFFLE_TIP),
     MakeWidget({375, 343}, {220,  14}, WindowWidgetType::Button,  WindowColour::Secondary, STR_MOVE_ALL_TOP                           ),
     MakeWidget({375, 358}, {220,  14}, WindowWidgetType::Button,  WindowColour::Secondary, STR_MOVE_ALL_BOTTOM                        ),
     MakeWidget({375, 373}, {220,  14}, WindowWidgetType::Button,  WindowColour::Secondary, STR_RANDOM_SHUFFLE,  STR_RANDOM_SHUFFLE_TIP),
@@ -177,6 +181,15 @@ public:
                 break;
             case WIDX_RANDOM_SHUFFLE:
                 ResearchItemsShuffle();
+                Invalidate();
+                break;
+            case WIDX_CATEGORY_ORDER:
+                ResearchItemsCategoryOrder(gResearchItemsInvented);
+                ResearchItemsCategoryOrder(gResearchItemsUninvented);
+                Invalidate();
+                break;
+            case WIDX_CATEGORY_SHUFFLE:
+                ResearchItemsCategoryShuffle();
                 Invalidate();
                 break;
             case WIDX_MOVE_ITEMS_TO_TOP:
@@ -455,6 +468,16 @@ public:
 
         widgets[WIDX_PREVIEW].left = width - 169;
         widgets[WIDX_PREVIEW].right = width - 56;
+
+        widgets[WIDX_CATEGORY_ORDER].top = height - 90;
+        widgets[WIDX_CATEGORY_ORDER].bottom = height - 77;
+        widgets[WIDX_CATEGORY_ORDER].left = width - 225;
+        widgets[WIDX_CATEGORY_ORDER].right = width - 6;
+
+        widgets[WIDX_CATEGORY_SHUFFLE].top = height - 75;
+        widgets[WIDX_CATEGORY_SHUFFLE].bottom = height - 62;
+        widgets[WIDX_CATEGORY_SHUFFLE].left = width - 225;
+        widgets[WIDX_CATEGORY_SHUFFLE].right = width - 6;
 
         widgets[WIDX_MOVE_ITEMS_TO_TOP].top = height - 57;
         widgets[WIDX_MOVE_ITEMS_TO_TOP].bottom = height - 44;

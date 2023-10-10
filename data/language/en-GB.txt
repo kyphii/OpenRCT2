@@ -3695,6 +3695,10 @@ STR_6589    :Show window buttons on the left
 STR_6590    :Show the window buttons (e.g. to close the window) on the left of the title bar instead of on the right.
 STR_6591    :Staff member is currently fixing a ride and can’t be fired.
 STR_6592    :Staff member is currently inspecting a ride and can’t be fired.
+STR_6593    :Order by Category
+STR_6594    :Sort the lists by research category
+STR_6595    :Shuffle by Category
+STR_6596    :Shuffle the items to invent during game, but maintain order within categories
 
 #############
 # Scenarios #

@@ -40,6 +40,8 @@
 
 #include <algorithm>
 #include <iterator>
+#include <queue>
+#include <set>
 
 using namespace OpenRCT2;
 
@@ -875,6 +877,59 @@ void ResearchItemsMakeAllResearched()
 void ResearchItemsShuffle()
 {
     std::shuffle(std::begin(gResearchItemsUninvented), std::end(gResearchItemsUninvented), std::default_random_engine{});
+}
+
+void ResearchItemsCategoryOrder(std::vector<ResearchItem>& itemList) {
+    std::queue<ResearchItem> inventionsByCategory[7]{};
+
+    for (auto& item : itemList)
+    {
+        inventionsByCategory[static_cast<uint8_t>(item.category)].push(item);
+    }
+
+    itemList.clear();
+
+    for (int i = 0; i < 7; ++i)
+    {
+        while (!inventionsByCategory[i].empty())
+        {
+            itemList.push_back(inventionsByCategory[i].front());
+            inventionsByCategory[i].pop();
+        }
+    }
+}
+
+void ResearchItemsCategoryShuffle()
+{
+    std::map<ResearchCategory, std::queue<ResearchItem>> inventionsByCategory{};
+
+    for (auto& item : gResearchItemsUninvented)
+    {
+        inventionsByCategory[item.category].push(item);
+    }
+
+    std::vector<ResearchCategory> usedCategories{};
+    for (auto it = inventionsByCategory.begin(); it != inventionsByCategory.end(); ++it)
+    {
+        usedCategories.push_back(it->first);
+    }
+
+    size_t numberOfItems = gResearchItemsUninvented.size();
+    gResearchItemsUninvented.clear();
+
+    for (size_t i = 0; i < numberOfItems; ++i)
+    {
+        int n = UtilRand() % usedCategories.size();
+        ResearchCategory randomCategory = usedCategories.at(n);
+
+        gResearchItemsUninvented.push_back(inventionsByCategory[randomCategory].front());
+        inventionsByCategory[randomCategory].pop();
+
+        if (inventionsByCategory[randomCategory].empty())
+        {
+            usedCategories.erase(usedCategories.begin() + n);
+        }
+    }
 }
 
 bool ResearchItem::IsAlwaysResearched() const

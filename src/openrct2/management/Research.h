@@ -161,6 +161,8 @@ void ResearchFix();
 void ResearchItemsMakeAllUnresearched();
 void ResearchItemsMakeAllResearched();
 void ResearchItemsShuffle();
+void ResearchItemsCategoryOrder(std::vector<ResearchItem>& itemList);
+void ResearchItemsCategoryShuffle();
 /**
  * Determines if a newly invented ride entry should be listed as a new ride
  * or as a new vehicle for a pre-existing ride.
