@@ -1,5 +1,6 @@
 0.4.19 (in development)
 ------------------------------------------------------------------------
+- Feature: [#19681] Add Water Slide operating mode.
 - Feature: [#23328] Introducing peep animation objects, enabling custom entertainer costumes.
 - Feature: [#23569] Add large diagonal flat to steep and dive loop track pieces.
 - Improved: [#23328] The costume list in the staff window is now ordered alphabetically.
@@ -492,7 +493,6 @@
 - Feature: [#19305] [Plugin] Add “Car.isReversed” to allow individual ride vehicles to run backwards.
 - Feature: [#19446] Add new colour options to colour dropdown.
 - Feature: [#19547] Add large sloped turns to hybrid coaster and single rail coaster.
-- Feature: [#19681] Add Water Slide operating mode.
 - Feature: [#19930] Add plugin APIs for research.
 - Feature: [#19979] Add plugin API for scenery groups.
 - Feature: [OpenMusic#25] Added Prehistoric ride music style.
