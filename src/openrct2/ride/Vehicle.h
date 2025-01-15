@@ -99,7 +99,7 @@ struct Vehicle : EntityBase
         Stopping1B,
         UnloadingPassengers1C,
         StoppedByBlockBrakes,
-        WaterSlideWaiting
+        WaterSlideWaiting,
     };
 
     Type SubType;

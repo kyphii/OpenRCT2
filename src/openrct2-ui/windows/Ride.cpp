@@ -2532,8 +2532,8 @@ static_assert(std::size(VehicleStatusNames) == 32);
 
             if (stringId != STR_CRASHING && stringId != STR_CRASHED_0)
                 return STR_BLACK_STRING;
-            else
-                return STR_RED_OUTLINED_STRING;
+
+            return STR_RED_OUTLINED_STRING;
         }
 
         StringId GetStatusStation(Formatter& ft) const

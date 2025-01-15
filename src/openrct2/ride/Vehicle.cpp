@@ -8949,7 +8949,7 @@ void Vehicle::WaterSlideRespawnVehicle()
     RideStation* entranceStation = nullptr;
     for (auto& station : GetRide()->GetStations())
     {
-        if (!station.Entrance.IsNull() && station.TrainAtStation == RideStation::NO_TRAIN)
+        if (!station.Entrance.IsNull() && station.TrainAtStation == RideStation::kNoTrain)
         {
             entranceStation = &station;
             break;
