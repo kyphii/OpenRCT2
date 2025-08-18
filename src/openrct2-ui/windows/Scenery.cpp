@@ -95,6 +95,7 @@ namespace OpenRCT2::Ui::Windows
         WIDX_SCENERY_SECONDARY_COLOUR_BUTTON,
         WIDX_SCENERY_TERTIARY_COLOUR_BUTTON,
         WIDX_SCENERY_EYEDROPPER_BUTTON,
+        WIDX_SCENERY_COLOUR_SWAP_BUTTON,
         WIDX_SCENERY_BUILD_CLUSTER_BUTTON,
         WIDX_FILTER_TEXT_BOX,
         WIDX_FILTER_CLEAR_BUTTON,
@@ -106,6 +107,7 @@ namespace OpenRCT2::Ui::Windows
     validate_global_widx(WC_SCENERY, WIDX_SCENERY_TAB_1);
     validate_global_widx(WC_SCENERY, WIDX_SCENERY_ROTATE_OBJECTS_BUTTON);
     validate_global_widx(WC_SCENERY, WIDX_SCENERY_EYEDROPPER_BUTTON);
+    validate_global_widx(WC_SCENERY, WIDX_SCENERY_COLOUR_SWAP_BUTTON);
 
     // clang-format off
     static constexpr auto WindowSceneryBaseWidgets = makeWidgets(
@@ -118,7 +120,8 @@ namespace OpenRCT2::Ui::Windows
         makeWidget({615, 120}, { 12, 12}, WidgetType::colourBtn, WindowColour::secondary, 0xFFFFFFFF,                   STR_SELECT_SECONDARY_COLOUR), // 10000000  0x009DE458
         makeWidget({615, 132}, { 12, 12}, WidgetType::colourBtn, WindowColour::secondary, 0xFFFFFFFF,                   STR_SELECT_TERTIARY_COLOUR ), // 20000000  0x009DE468
         makeWidget({609, 145}, { 24, 24}, WidgetType::flatBtn,   WindowColour::secondary, ImageId(SPR_G2_EYEDROPPER),   STR_SCENERY_EYEDROPPER_TIP ), // 40000000  0x009DE478
-        makeWidget({609, 169}, { 24, 24}, WidgetType::flatBtn,   WindowColour::secondary, ImageId(SPR_SCENERY_CLUSTER), STR_SCENERY_CLUSTER_TIP    ), // 40000000  0x009DE478
+        makeWidget({609, 175}, { 24, 24}, WidgetType::flatBtn,   WindowColour::secondary, ImageId(SPR_G2_COLOUR_SWAP),   STR_SCENERY_COLOUR_SWAP_TIP ),
+        makeWidget({609, 203}, { 24, 24}, WidgetType::flatBtn,   WindowColour::secondary, ImageId(SPR_SCENERY_CLUSTER), STR_SCENERY_CLUSTER_TIP    ), // 40000000  0x009DE478
         makeWidget({  4,  46}, {211, 14}, WidgetType::textBox,   WindowColour::secondary                                                           ),
         makeWidget({218,  46}, { 70, 14}, WidgetType::button,    WindowColour::secondary, STR_OBJECT_SEARCH_CLEAR                                  ),
         makeWidget({539,  46}, { 70, 14}, WidgetType::button,    WindowColour::secondary, STR_RESTRICT_SCENERY,   STR_RESTRICT_SCENERY_TIP         )
@@ -293,6 +296,26 @@ namespace OpenRCT2::Ui::Windows
                     if (gWindowSceneryScatterEnabled)
                         windowMgr->CloseByClass(WindowClass::SceneryScatter);
                     SceneryRemoveGhostToolPlacement();
+                    Invalidate();
+                    break;
+                case WIDX_SCENERY_COLOUR_SWAP_BUTTON:
+                    colour_t hold;
+
+                    // instead of checking the different flags for each obj type, just check if the color button is enabled
+                    if (widgets[WIDX_SCENERY_SECONDARY_COLOUR_BUTTON].type != WidgetType::empty)
+                    {
+                        hold = _sceneryPrimaryColour;
+                        _sceneryPrimaryColour = _scenerySecondaryColour;
+                        if (widgets[WIDX_SCENERY_TERTIARY_COLOUR_BUTTON].type != WidgetType::empty)
+                        {
+                            _scenerySecondaryColour = _sceneryTertiaryColour;
+                            _sceneryTertiaryColour = hold;
+                        }
+                        else
+                        {
+                            _scenerySecondaryColour = hold;
+                        }
+                    }
                     Invalidate();
                     break;
                 case WIDX_SCENERY_BUILD_CLUSTER_BUTTON:
@@ -830,10 +853,12 @@ namespace OpenRCT2::Ui::Windows
             widgets[WIDX_SCENERY_ROTATE_OBJECTS_BUTTON].left = windowWidth - 25;
             widgets[WIDX_SCENERY_REPAINT_SCENERY_BUTTON].left = windowWidth - 25;
             widgets[WIDX_SCENERY_EYEDROPPER_BUTTON].left = windowWidth - 25;
+            widgets[WIDX_SCENERY_COLOUR_SWAP_BUTTON].left = windowWidth - 25;
             widgets[WIDX_SCENERY_BUILD_CLUSTER_BUTTON].left = windowWidth - 25;
             widgets[WIDX_SCENERY_ROTATE_OBJECTS_BUTTON].right = windowWidth - 2;
             widgets[WIDX_SCENERY_REPAINT_SCENERY_BUTTON].right = windowWidth - 2;
             widgets[WIDX_SCENERY_EYEDROPPER_BUTTON].right = windowWidth - 2;
+            widgets[WIDX_SCENERY_COLOUR_SWAP_BUTTON].right = windowWidth - 2;
             widgets[WIDX_SCENERY_BUILD_CLUSTER_BUTTON].right = windowWidth - 2;
 
             widgets[WIDX_SCENERY_PRIMARY_COLOUR_BUTTON].left = windowWidth - 19;
@@ -845,6 +870,7 @@ namespace OpenRCT2::Ui::Windows
 
             const bool canFit = widgets[WIDX_SCENERY_BUILD_CLUSTER_BUTTON].top < height;
             widgets[WIDX_SCENERY_EYEDROPPER_BUTTON].type = canFit ? WidgetType::flatBtn : WidgetType::empty;
+            widgets[WIDX_SCENERY_COLOUR_SWAP_BUTTON].type = canFit ? WidgetType::flatBtn : WidgetType::empty;
             widgets[WIDX_SCENERY_BUILD_CLUSTER_BUTTON].type = canFit ? WidgetType::flatBtn : WidgetType::empty;
         }
 
@@ -1465,6 +1491,8 @@ namespace OpenRCT2::Ui::Windows
                 widgets[WIDX_SCENERY_TERTIARY_COLOUR_BUTTON].bottom += shiftAmount;
                 widgets[WIDX_SCENERY_EYEDROPPER_BUTTON].top += shiftAmount;
                 widgets[WIDX_SCENERY_EYEDROPPER_BUTTON].bottom += shiftAmount;
+                widgets[WIDX_SCENERY_COLOUR_SWAP_BUTTON].top += shiftAmount;
+                widgets[WIDX_SCENERY_COLOUR_SWAP_BUTTON].bottom += shiftAmount;
                 widgets[WIDX_SCENERY_BUILD_CLUSTER_BUTTON].top += shiftAmount;
                 widgets[WIDX_SCENERY_BUILD_CLUSTER_BUTTON].bottom += shiftAmount;
                 widgets[WIDX_FILTER_TEXT_BOX].top += shiftAmount;

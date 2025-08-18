@@ -364,6 +364,11 @@
         "x": 1
     },
     {
+        "path": "icons/colour_swap.png",
+        "x": 3,
+        "y": 3
+    },
+    {
         "path": "icons/monitor_0.png",
         "x": 3,
         "y": 3
