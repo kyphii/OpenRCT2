@@ -76,9 +76,10 @@ namespace OpenRCT2::Ui::Windows
     constexpr int32_t kTabMargin = 3;
     constexpr int32_t kTabWidth = 31;
     constexpr int32_t kTabHeight = 28;
-    constexpr int32_t kReservedTabCount = 2;
-    constexpr int32_t kMaxTabs = 257; // 255 selected tabs + misc + all
+    constexpr int32_t kReservedTabCount = 3;
+    constexpr int32_t kMaxTabs = 258; // 255 selected tabs + misc + all + favorites
     constexpr int32_t kMaxTabsPerRow = 20;
+    constexpr int32_t kFavoritesHoverZoneSize = 20;
 
     constexpr uint8_t kSceneryContentScrollIndex = 0;
 
@@ -145,6 +146,7 @@ namespace OpenRCT2::Ui::Windows
             SCENERY_TAB_TYPE_GROUP,
             SCENERY_TAB_TYPE_MISC,
             SCENERY_TAB_TYPE_ALL,
+            SCENERY_TAB_TYPE_FAVORITES
         };
 
         struct SceneryItem
@@ -164,6 +166,11 @@ namespace OpenRCT2::Ui::Windows
             bool IsMisc() const
             {
                 return Type == SCENERY_TAB_TYPE_MISC;
+            }
+
+            bool IsFavorites() const
+            {
+                return Type == SCENERY_TAB_TYPE_FAVORITES;
             }
 
             bool IsAll() const
@@ -207,6 +214,7 @@ namespace OpenRCT2::Ui::Windows
         int32_t _requiredWidth;
         int32_t _actualMinHeight;
         ScenerySelection _selectedScenery;
+        bool _favoriteZoneHovered;
         int16_t _hoverCounter;
         SceneryTabInfo _filteredSceneryTab;
 
@@ -226,6 +234,7 @@ namespace OpenRCT2::Ui::Windows
             gSceneryShiftPressed = false;
             _selectedScenery = {};
             _hoverCounter = 0;
+            _favoriteZoneHovered = false;
             gSceneryGhostType = 0;
             gSceneryPlaceCost = kMoney64Undefined;
             gSceneryPlaceRotation = 0;
@@ -641,6 +650,13 @@ namespace OpenRCT2::Ui::Windows
                         return { fallback, ft };
                     }
 
+                    if (tabInfo.IsFavorites())
+                    {
+                        auto ft = Formatter();
+                        ft.Add<StringId>(STR_FAVORITE_SCENERY);
+                        return { fallback, ft };
+                    }
+
                     const auto* sceneryEntry = tabInfo.GetSceneryGroupEntry();
                     if (sceneryEntry != nullptr)
                     {
@@ -666,6 +682,10 @@ namespace OpenRCT2::Ui::Windows
                 if (tabInfo.IsAll())
                 {
                     titleStringId = STR_ALL_SCENERY;
+                }
+                else if (tabInfo.IsFavorites())
+                {
+                    titleStringId = STR_FAVORITE_SCENERY;
                 }
                 else
                 {
@@ -820,6 +840,15 @@ namespace OpenRCT2::Ui::Windows
                     allTabWidget->right = windowWidth - 7;
                     allTabWidget->top = tabTop;
                     allTabWidget->bottom = tabTop + kTabHeight;
+                }
+
+                if ((_tabEntries[_tabEntries.size() - 2]).IsFavorites())
+                {
+                    auto favoritesTabWidget = &widgets[WIDX_SCENERY_TAB_1 + _tabEntries.size() - 2];
+                    favoritesTabWidget->left = windowWidth - (kTabWidth * 2) - 6;
+                    favoritesTabWidget->right = windowWidth - 7;
+                    favoritesTabWidget->top = tabTop;
+                    favoritesTabWidget->bottom = tabTop + kTabHeight;
                 }
             }
 
@@ -1031,6 +1060,7 @@ namespace OpenRCT2::Ui::Windows
 
             // Add misc and all tab
             _tabEntries.emplace_back(SceneryWindow::SceneryTabInfo{ SCENERY_TAB_TYPE_MISC });
+            _tabEntries.emplace_back(SceneryWindow::SceneryTabInfo{ SCENERY_TAB_TYPE_FAVORITES });
             _tabEntries.emplace_back(SceneryWindow::SceneryTabInfo{ SCENERY_TAB_TYPE_ALL });
 
             // small scenery
@@ -1086,7 +1116,7 @@ namespace OpenRCT2::Ui::Windows
             _tabEntries.erase(
                 std::remove_if(
                     _tabEntries.begin(), _tabEntries.end(),
-                    [](const SceneryTabInfo& tabInfo) { return tabInfo.Entries.empty(); }),
+                    [](const SceneryTabInfo& tabInfo) { return tabInfo.Entries.empty() && tabInfo.Type != SCENERY_TAB_TYPE_FAVORITES; }),
                 _tabEntries.end());
 
             // Set required width
@@ -1169,7 +1199,11 @@ namespace OpenRCT2::Ui::Windows
                 if (!oldScenery.IsUndefined())
                 {
                     // Make sure last selected scenery for tab is always present
-                    _filteredSceneryTab.AddEntryToFront(oldScenery);
+                    // In Favorites tab case, only add if the item is still favorited
+                    if (tabIndex != _tabEntries.size() - 2 || IsSceneryItemFavorited(oldScenery))
+                    {
+                        _filteredSceneryTab.AddEntryToFront(oldScenery);
+                    }
                 }
                 else
                 {
@@ -1232,10 +1266,10 @@ namespace OpenRCT2::Ui::Windows
 
         SceneryTabInfo* GetSceneryTabInfoForMisc()
         {
-            if (_tabEntries.size() >= 2)
+            if (_tabEntries.size() >= 3)
             {
-                if (_tabEntries[_tabEntries.size() - 2].IsMisc())
-                    return &_tabEntries[_tabEntries.size() - 2];
+                if (_tabEntries[_tabEntries.size() - 3].IsMisc())
+                    return &_tabEntries[_tabEntries.size() - 3];
             }
 
             return nullptr;
@@ -1247,6 +1281,17 @@ namespace OpenRCT2::Ui::Windows
             {
                 if (_tabEntries.back().IsAll())
                     return &_tabEntries.back();
+            }
+
+            return nullptr;
+        }
+
+        SceneryTabInfo* GetSceneryTabInfoForFavorites()
+        {
+            if (_tabEntries.size() >= 2)
+            {
+                if (_tabEntries[_tabEntries.size() - 2].IsFavorites())
+                    return &_tabEntries[_tabEntries.size() - 2];
             }
 
             return nullptr;
@@ -1294,6 +1339,16 @@ namespace OpenRCT2::Ui::Windows
                     allTabInfo->AddEntryToBack(selection);
                 }
 
+                // Add favorited scenery to favorites tab
+                if (IsSceneryItemFavorited(selection))
+                {
+                    auto* tabInfo = GetSceneryTabInfoForFavorites();
+                    if (tabInfo != nullptr)
+                    {
+                        tabInfo->AddEntryToBack(selection);
+                    }
+                }
+
                 // Add scenery to primary group (usually trees or path additions)
                 if (sceneryGroupIndex != kObjectEntryIndexNull)
                 {
@@ -1329,6 +1384,30 @@ namespace OpenRCT2::Ui::Windows
             {
                 if (MatchFilter(selection))
                     _filteredSceneryTab.AddEntryToBack(selection);
+            }
+        }
+
+        void UpdateFavoritesTab(const ScenerySelection& item, bool addItem)
+        {
+            auto tabInfo = GetSceneryTabInfoForFavorites();
+            if (tabInfo != nullptr)
+            {
+                if (addItem)
+                {
+                    tabInfo->AddEntryToBack(item);
+                }
+                else if (tabInfo->Contains(item))
+                {
+                    tabInfo->Entries.erase(std::find(std::begin(tabInfo->Entries), std::end(tabInfo->Entries), item));
+                    // If favorites is currently selected tab, erase item from content view
+                    if (_activeTabIndex == _tabEntries.size() - 2)
+                    {
+                        _filteredSceneryTab.Entries.erase(
+                            std::find(std::begin(_filteredSceneryTab.Entries), std::end(_filteredSceneryTab.Entries), item));
+                        
+                        Invalidate();
+                    }
+                }
             }
         }
 
@@ -1403,7 +1482,7 @@ namespace OpenRCT2::Ui::Windows
             SetWidgets(WindowSceneryBaseWidgets);
 
             auto hasMisc = GetSceneryTabInfoForMisc() != nullptr;
-            auto kMaxTabsInThisRow = kMaxTabsPerRow - 1 - (hasMisc ? 1 : 0);
+            auto kMaxTabsInThisRow = kMaxTabsPerRow - 2 - (hasMisc ? 1 : 0);
 
             // Add tabs
             int32_t tabsInThisRow = 0;
@@ -1417,7 +1496,7 @@ namespace OpenRCT2::Ui::Windows
                 {
                     widget.image = ImageId(SPR_TAB_QUESTION, FilterPaletteID::PaletteNull);
                 }
-                else if (tabInfo.IsAll())
+                else if (tabInfo.IsAll() || tabInfo.IsFavorites())
                 {
                     widget.image = ImageId(SPR_TAB, FilterPaletteID::PaletteNull);
                 }
@@ -1504,6 +1583,15 @@ namespace OpenRCT2::Ui::Windows
             if (scenery.IsUndefined())
                 return;
 
+            if (_favoriteZoneHovered)
+            {
+                // Toggle favorite status, do not change selected scenery
+                const auto setFavorited = !IsSceneryItemFavorited(scenery);
+                SetSceneryItemFavorited(scenery, setFavorited);
+                UpdateFavoritesTab(scenery, setFavorited);
+                return;
+            }
+
             auto lastScenery = GetSelectedScenery(_activeTabIndex);
             if (lastScenery != scenery && !MatchFilter(lastScenery))
             {
@@ -1523,6 +1611,14 @@ namespace OpenRCT2::Ui::Windows
         void ContentScrollMouseOver(const ScreenCoordsXY& screenCoords)
         {
             ScenerySelection scenery = GetSceneryIdByCursorPos(screenCoords);
+            bool prevFavoriteHovered = _favoriteZoneHovered;
+            _favoriteZoneHovered = (
+                screenCoords.x % kSceneryButtonWidth < kFavoritesHoverZoneSize &&
+                screenCoords.y % kSceneryButtonHeight < kFavoritesHoverZoneSize);
+            if (prevFavoriteHovered != _favoriteZoneHovered)
+            {
+                Invalidate();
+            }
             if (!scenery.IsUndefined() && _selectedScenery != scenery)
             {
                 _selectedScenery = scenery;
@@ -1613,6 +1709,19 @@ namespace OpenRCT2::Ui::Windows
                 {
                     auto imageId = ImageId(SPR_G2_INFINITY, FilterPaletteID::PaletteNull);
                     GfxDrawSprite(rt, imageId, offset + widgetCoordsXY);
+                }
+                else if (_tabEntries[tabIndex].IsFavorites())
+                {
+                    if (GetFavoritedScenery().size() == 0)
+                    {
+                        widgets[widgetIndex].flags.set(WidgetFlag::isHidden);
+                    }
+                    else
+                    {
+                        widgets[widgetIndex].flags.unset(WidgetFlag::isHidden);
+                        auto imageId = ImageId(SPR_G2_TAB_FAVORITES, FilterPaletteID::PaletteNull);
+                        GfxDrawSprite(rt, imageId, offset + widgetCoordsXY);
+                    }
                 }
             }
         }
@@ -1769,6 +1878,14 @@ namespace OpenRCT2::Ui::Windows
                         clippedRT, rt, topLeft + ScreenCoordsXY{ 1, 1 }, kSceneryButtonWidth - 2, kSceneryButtonHeight - 2))
                 {
                     DrawSceneryItem(clippedRT, currentSceneryGlobal);
+                }
+
+                const auto itemFavorited = (IsSceneryItemFavorited(currentSceneryGlobal));
+                if (itemFavorited || (_favoriteZoneHovered && _selectedScenery == currentSceneryGlobal))
+                {
+                    auto imageId = ImageId(SPR_G2_SCENERY_FAVORITE_STAR)
+                                       .WithPrimary((itemFavorited) ? COLOUR_YELLOW : colours[1].colour);
+                    GfxDrawSprite(rt, imageId, topLeft + ScreenCoordsXY{ 1, 1 });
                 }
 
                 topLeft.x += kSceneryButtonWidth;

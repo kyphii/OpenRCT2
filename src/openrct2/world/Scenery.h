@@ -72,11 +72,15 @@ void SceneryRemoveGhostToolPlacement();
 bool IsSceneryAvailableToBuild(const ScenerySelection& item);
 
 bool IsSceneryItemRestricted(const ScenerySelection& item);
+bool IsSceneryItemFavorited(const ScenerySelection& item);
 void ClearRestrictedScenery();
+void ClearFavoritedScenery();
 void RestrictAllMiscScenery();
 void MarkAllUnrestrictedSceneryAsInvented();
 std::vector<ScenerySelection>& GetRestrictedScenery();
+std::vector<ScenerySelection>& GetFavoritedScenery();
 void SetSceneryItemRestricted(const ScenerySelection& item, bool on);
+void SetSceneryItemFavorited(const ScenerySelection& item, bool on);
 bool ObjectTypeCanBeRestricted(ObjectType objectType);
 
 ObjectType GetObjectTypeFromSceneryType(uint8_t type);

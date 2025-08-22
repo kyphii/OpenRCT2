@@ -84,6 +84,7 @@ namespace OpenRCT2
 
         CheatsReset();
         ClearRestrictedScenery();
+        ClearFavoritedScenery();
 
 #ifdef ENABLE_SCRIPTING
         auto& scriptEngine = GetContext()->GetScriptEngine();

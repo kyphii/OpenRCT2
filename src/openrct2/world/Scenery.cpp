@@ -372,14 +372,31 @@ bool IsSceneryItemRestricted(const ScenerySelection& item)
         != std::end(gameState.restrictedScenery);
 }
 
+bool IsSceneryItemFavorited(const ScenerySelection& item)
+{
+    auto& gameState = getGameState();
+    return std::find(std::begin(gameState.favoritedScenery), std::end(gameState.favoritedScenery), item)
+        != std::end(gameState.favoritedScenery);
+}
+
 void ClearRestrictedScenery()
 {
     getGameState().restrictedScenery.clear();
 }
 
+void ClearFavoritedScenery()
+{
+    getGameState().favoritedScenery.clear();
+}
+
 std::vector<ScenerySelection>& GetRestrictedScenery()
 {
     return getGameState().restrictedScenery;
+}
+
+std::vector<ScenerySelection>& GetFavoritedScenery()
+{
+    return getGameState().favoritedScenery;
 }
 
 void SetSceneryItemRestricted(const ScenerySelection& item, bool on)
@@ -400,6 +417,24 @@ void SetSceneryItemRestricted(const ScenerySelection& item, bool on)
         {
             gameState.restrictedScenery.erase(existingItem);
         }
+    }
+}
+
+void SetSceneryItemFavorited(const ScenerySelection& item, bool on)
+{
+    auto& gameState = getGameState();
+    auto existingItem = std::find(std::begin(gameState.favoritedScenery), std::end(gameState.favoritedScenery), item);
+    const bool existingItemIsPresent = existingItem != std::end(gameState.favoritedScenery);
+    if (on)
+    {
+        if (!existingItemIsPresent)
+        {
+            gameState.favoritedScenery.push_back(item);
+        }
+    }
+    else if (existingItemIsPresent)
+    {
+        gameState.favoritedScenery.erase(existingItem);
     }
 }
 

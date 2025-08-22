@@ -364,6 +364,14 @@
         "x": 1
     },
     {
+        "path": "icons/tab_favorites.png",
+        "x": 4,
+        "y": 2
+    },
+    {
+        "path": "icons/scenery_favorite_star.png"
+    },
+    {
         "path": "icons/monitor_0.png",
         "x": 3,
         "y": 3

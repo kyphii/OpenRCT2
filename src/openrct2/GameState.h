@@ -77,6 +77,7 @@ namespace OpenRCT2
         std::vector<TileElement> tileElements;
 
         std::vector<ScenerySelection> restrictedScenery;
+        std::vector<ScenerySelection> favoritedScenery;
 
         std::vector<PeepSpawn> peepSpawns;
 

@@ -1831,6 +1831,7 @@ namespace OpenRCT2
 
         // Window: Scenery
         STR_ALL_SCENERY = 6547,
+        STR_FAVORITE_SCENERY = 7004,
         STR_MISCELLANEOUS = 1813,
         STR_RESTRICT_SCENERY = 6621,
         STR_RESTRICT_SCENERY_TIP = 6622,

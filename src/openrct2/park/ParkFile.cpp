@@ -98,6 +98,7 @@ namespace OpenRCT2
         constexpr uint32_t RESTRICTED_OBJECTS   = 0x37;
         constexpr uint32_t PLUGIN_STORAGE       = 0x38;
         constexpr uint32_t PREVIEW              = 0x39;
+        constexpr uint32_t FAVORITED_OBJECTS    = 0x3a;
         constexpr uint32_t PACKED_OBJECTS       = 0x80;
         // clang-format on
     }; // namespace ParkFileChunkType
@@ -168,6 +169,7 @@ namespace OpenRCT2
             ReadWriteInterfaceChunk(gameState, os);
             ReadWriteCheatsChunk(gameState, os);
             ReadWriteRestrictedObjectsChunk(gameState, os);
+            ReadWriteFavoritedObjectsChunk(gameState, os);
             ReadWritePluginStorageChunk(gameState, os);
             if (os.GetHeader().TargetVersion < 0x4)
             {
@@ -204,6 +206,7 @@ namespace OpenRCT2
             ReadWriteRestrictedObjectsChunk(gameState, os);
             ReadWritePluginStorageChunk(gameState, os);
             ReadWritePreviewChunk(gameState, os);
+            ReadWriteFavoritedObjectsChunk(gameState, os);
             ReadWritePackedObjectsChunk(os);
         }
 
@@ -767,6 +770,28 @@ namespace OpenRCT2
                 scriptEngine.SetParkStorageFromJSON(gameState.pluginStorage);
 #endif
             }
+        }
+
+        void ReadWriteFavoritedObjectsChunk(GameState_t& gameState, OrcaStream& os)
+        {
+            os.ReadWriteChunk(ParkFileChunkType::FAVORITED_OBJECTS, [](OrcaStream::ChunkStream& cs) {
+                auto& favoritedScenery = GetFavoritedScenery();
+
+                // We are want to support all object types in the future, so convert scenery type
+                // to object type when we write the list
+                cs.ReadWriteVector(favoritedScenery, [&cs](ScenerySelection& item) {
+                    if (cs.GetMode() == OrcaStream::Mode::READING)
+                    {
+                        item.SceneryType = GetSceneryTypeFromObjectType(static_cast<ObjectType>(cs.Read<uint16_t>()));
+                        item.EntryIndex = cs.Read<ObjectEntryIndex>();
+                    }
+                    else
+                    {
+                        cs.Write(static_cast<uint16_t>(GetObjectTypeFromSceneryType(item.SceneryType)));
+                        cs.Write(item.EntryIndex);
+                    }
+                });
+            });
         }
 
         void ReadWritePackedObjectsChunk(OrcaStream& os)
