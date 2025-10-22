@@ -31,8 +31,8 @@ constexpr RideTypeDescriptor GigaCoasterRTD =
     .Flags = kRtdFlagsHasThreeColours | kRtdFlagsCommonCoaster | kRtdFlagsCommonCoasterNonAlt |
                  EnumsToFlags(RtdFlag::hasLeaveWhenAnotherVehicleArrivesAtStation, RtdFlag::checkGForces, 
                               RtdFlag::allowMultipleCircuits, RtdFlag::allowCableLiftHill, RtdFlag::allowReversedTrains),
-    .RideModes = RideModes::IndexToFlags({ RideModeID::CONTINUOUS_CIRCUIT, RideModeID::CONTINUOUS_CIRCUIT_BLOCK_SECTIONED }),
-    .DefaultMode = RideModeID::CONTINUOUS_CIRCUIT,
+    .RideModes = RideModes::IndexToFlags({ RideModeID::continuousCircuit, RideModeID::continuousCircuitBlockSectioned }),
+    .DefaultMode = RideModeID::continuousCircuit,
     .OperatingSettings = { 10, 27 },
     .TrackSpeedSettings = { 60, 60 },
     .BoosterSettings = { 17, 68 },

@@ -1314,7 +1314,7 @@ static void SetUnreliabilityFactor(Ride& ride)
 {
     const auto& rtd = ride.getRideTypeDescriptor();
     // Special unreliability for a few ride types
-    if (rtd.HasFlag(RtdFlag::reverseInclineLaunchAffectsReliability) && ride.mode == RideModes::reverseInclineLaunchedShuttle)
+    if (rtd.HasFlag(RtdFlag::reverseInclineLaunchAffectsReliability) && ride.mode == RideModes::kReverseInclineLaunchedShuttle)
     {
         ride.unreliabilityFactor += 10;
     }
@@ -1895,7 +1895,7 @@ static void RideRatingsApplyBonusReversedTrains(RideRating::Tuple& ratings, cons
 
 static void RideRatingsApplyBonusGoKartRace(RideRating::Tuple& ratings, const Ride& ride, RatingsModifier modifier)
 {
-    if (ride.mode == RideModes::race && ride.numTrains >= modifier.threshold)
+    if (ride.mode == RideModes::kRace && ride.numTrains >= modifier.threshold)
     {
         RideRatingsAdd(ratings, modifier.excitement, modifier.intensity, modifier.nausea);
 
@@ -1935,7 +1935,7 @@ static void RideRatingsApplyBonusBoatHireNoCircuit(RideRating::Tuple& ratings, c
 
 static void RideRatingsApplyBonusSlideUnlimitedRides(RideRating::Tuple& ratings, const Ride& ride, RatingsModifier modifier)
 {
-    if (ride.mode == RideModes::unlimitedRidesPerAdmission)
+    if (ride.mode == RideModes::kUnlimitedRidesPerAdmission)
     {
         RideRatingsAdd(ratings, modifier.excitement, modifier.intensity, modifier.nausea);
     }
@@ -1972,7 +1972,7 @@ static void RideRatingsApplyBonusNumTrains(RideRating::Tuple& ratings, const Rid
 
 static void RideRatingsApplyBonusDownwardLaunch(RideRating::Tuple& ratings, const Ride& ride, RatingsModifier modifier)
 {
-    if (ride.mode == RideModes::downwardLaunch)
+    if (ride.mode == RideModes::kDownwardLaunch)
     {
         RideRatingsAdd(ratings, modifier.excitement, modifier.intensity, modifier.nausea);
     }
@@ -1995,7 +1995,7 @@ static void RideRatingsApplyBonusLaunchedFreefallSpecial(
     RideRatingsApplyBonusOperationOptionFreefall(ratings, ride, modifier);
 #else
     // Only apply "launch speed" effects when the setting can be modified
-    if (ride.mode == RideModes::upwardLaunch)
+    if (ride.mode == RideModes::kUpwardLaunch)
     {
         RideRatingsApplyBonusOperationOptionFreefall(ratings, ride, modifier);
     }

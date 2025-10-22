@@ -31,8 +31,8 @@ constexpr RideTypeDescriptor VerticalDropCoasterRTD =
     .InvertedTrackPaintFunctions = {},
     .Flags = kRtdFlagsHasThreeColours | kRtdFlagsCommonCoaster | kRtdFlagsCommonCoasterNonAlt |
         EnumsToFlags(RtdFlag::hasLeaveWhenAnotherVehicleArrivesAtStation, RtdFlag::checkGForces),
-    .RideModes = RideModes::IndexToFlags({ RideModeID::CONTINUOUS_CIRCUIT, RideModeID::CONTINUOUS_CIRCUIT_BLOCK_SECTIONED }),
-    .DefaultMode = RideModeID::CONTINUOUS_CIRCUIT,
+    .RideModes = RideModes::IndexToFlags({ RideModeID::continuousCircuit, RideModeID::continuousCircuitBlockSectioned }),
+    .DefaultMode = RideModeID::continuousCircuit,
     .OperatingSettings = { 10, 27 },
     .BoosterSettings = { 17, 68 },
     .LegacyBoosterSettings = { 17, 68 },

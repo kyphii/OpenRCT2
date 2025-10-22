@@ -167,7 +167,7 @@ static void ConsoleCommandRides(InteractiveConsole& console, const arguments_t& 
                 if (argv.size() > 1 && argv[1] == "mode")
                 {
                     console.WriteFormatLine("Ride modes are specified using integer IDs as given below:");
-                    for (uint8_t i = 0; i < static_cast<uint8_t>(RideModeID::COUNT); i++)
+                    for (uint8_t i = 0; i < static_cast<uint8_t>(RideModeID::count); i++)
                     {
                         char mode_name[128] = { 0 };
                         StringId mode_string_id = RideModes::FromIndex(i).Name;
@@ -234,7 +234,7 @@ static void ConsoleCommandRides(InteractiveConsole& console, const arguments_t& 
                 else
                 {
                     auto ride = GetRide(RideId::FromUnderlying(ride_index));
-                    if (mode >= static_cast<int32_t>(RideModeID::COUNT))
+                    if (mode >= static_cast<int32_t>(RideModeID::count))
                     {
                         console.WriteFormatLine("Invalid ride mode.");
                     }

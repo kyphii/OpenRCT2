@@ -31,8 +31,8 @@ constexpr RideTypeDescriptor SideFrictionRollerCoasterRTD =
     .Flags = kRtdFlagsHasThreeColours | kRtdFlagsCommonCoaster | kRtdFlagsCommonCoasterNonAlt | 
         EnumsToFlags(RtdFlag::hasLeaveWhenAnotherVehicleArrivesAtStation, RtdFlag::checkGForces,
                      RtdFlag::allowMultipleCircuits, RtdFlag::allowReversedTrains),
-    .RideModes = RideModes::IndexToFlags({ RideModeID::CONTINUOUS_CIRCUIT }),
-    .DefaultMode = RideModeID::CONTINUOUS_CIRCUIT,
+    .RideModes = RideModes::IndexToFlags({ RideModeID::continuousCircuit }),
+    .DefaultMode = RideModeID::continuousCircuit,
     .Naming = { STR_RIDE_NAME_SIDE_FRICTION_ROLLER_COASTER, STR_RIDE_DESCRIPTION_SIDE_FRICTION_ROLLER_COASTER },
     .NameConvention = { RideComponentType::Train, RideComponentType::Track, RideComponentType::Station },
     .AvailableBreakdowns = (1 << BREAKDOWN_SAFETY_CUT_OUT) | (1 << BREAKDOWN_VEHICLE_MALFUNCTION) | (1 << BREAKDOWN_BRAKES_FAILURE),

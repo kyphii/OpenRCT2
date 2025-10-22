@@ -41,11 +41,11 @@ RideMode RideModes::GetBlockSectionedCounterpart(RideMode originalMode)
 {
     switch (originalMode.Index)
     {
-        case RideModeID::CONTINUOUS_CIRCUIT:
-            return RideModes::continuousCircuitBlockSectioned;
-        case RideModeID::POWERED_LAUNCH:
-        case RideModeID::POWERED_LAUNCH_PASSTHROUGH:
-            return RideModes::poweredLaunchBlockSectioned;
+        case RideModeID::continuousCircuit:
+            return RideModes::kContinuousCircuitBlockSectioned;
+        case RideModeID::poweredLaunch:
+        case RideModeID::poweredLaunchPassthrough:
+            return RideModes::kPoweredLaunchBlockSectioned;
         default:
             return originalMode;
     }
@@ -55,9 +55,9 @@ RideMode RideModes::GetNonBlockSectionedCounterpart(RideMode originalMode, RideM
 {
     switch (originalMode.Index)
     {
-        case RideModeID::CONTINUOUS_CIRCUIT_BLOCK_SECTIONED:
-            return RideModes::continuousCircuit;
-        case RideModeID::POWERED_LAUNCH_BLOCK_SECTIONED:
+        case RideModeID::continuousCircuitBlockSectioned:
+            return RideModes::kContinuousCircuit;
+        case RideModeID::poweredLaunchBlockSectioned:
             return FromID(defaultMode);
         default:
             return originalMode;

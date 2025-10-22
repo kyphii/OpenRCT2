@@ -836,7 +836,7 @@ void Ride::formatStatusTo(Formatter& ft) const
     {
         ft.Add<StringId>(STR_TEST_RUN);
     }
-    else if (mode == RideModes::race && !(lifecycleFlags & RIDE_LIFECYCLE_PASS_STATION_NO_STOPPING) && !raceWinner.IsNull())
+    else if (mode == RideModes::kRace && !(lifecycleFlags & RIDE_LIFECYCLE_PASS_STATION_NO_STOPPING) && !raceWinner.IsNull())
     {
         auto peep = getGameState().entities.GetEntity<Guest>(raceWinner);
         if (peep != nullptr)
@@ -883,7 +883,7 @@ bool Ride::canHaveMultipleCircuits() const
         return false;
 
     // Only allow circuit or launch modes
-    if (!mode.hasFlag(RIDE_MODE_FLAG_ALLOW_MULTIPLE_CIRCUITS))
+    if (!mode.HasFlag(rideModeFlagAllowMultipleCircuits))
     {
         return false;
     }
@@ -2555,11 +2555,11 @@ static ResultWithMessage RideModeCheckValidStationNumbers(const Ride& ride)
 
     switch (ride.mode.StationType)
     {
-        case RIDE_MODE_STATIONS_ONLY_ONE:
+        case rideModeStationTypeMaxOne:
             if (numStations <= 1)
                 return { true };
             return { false, STR_UNABLE_TO_OPERATE_WITH_MORE_THAN_ONE_STATION_IN_THIS_MODE };
-        case RIDE_MODE_STATIONS_MORE_THAN_ONE:
+        case rideModeStationTypeMinTwo:
             if (numStations >= 2)
                 return { true };
             return { false, STR_UNABLE_TO_OPERATE_WITH_LESS_THAN_TWO_STATIONS_IN_THIS_MODE };
@@ -3597,7 +3597,7 @@ ResultWithMessage Ride::createVehicles(const CoordsXYE& element, bool isApplying
     int32_t direction = trackElement->GetDirection();
 
     //
-    if (mode == RideModes::stationToStation)
+    if (mode == RideModes::kStationToStation)
     {
         vehiclePos -= CoordsXYZ{ CoordsDirectionDelta[direction], 0 };
 
@@ -3848,7 +3848,7 @@ static ResultWithMessage RideCreateCableLift(RideId rideIndex, bool isApplying)
     if (ride == nullptr)
         return { false };
 
-    if (ride->mode != RideModes::continuousCircuitBlockSectioned && ride->mode != RideModes::continuousCircuit)
+    if (ride->mode != RideModes::kContinuousCircuitBlockSectioned && ride->mode != RideModes::kContinuousCircuit)
     {
         return { false, STR_CABLE_LIFT_UNABLE_TO_WORK_IN_THIS_OPERATING_MODE };
     }
@@ -4591,12 +4591,12 @@ bool Ride::hasWhirlpool() const
 
 bool Ride::isPoweredLaunched() const
 {
-    return mode.hasFlag(RIDE_MODE_FLAG_IS_POWERED_LAUNCH);
+    return mode.HasFlag(rideModeFlagIsPoweredLaunch);
 }
 
 bool Ride::isBlockSectioned() const
 {
-    return mode.hasFlag(RIDE_MODE_FLAG_IS_BLOCK_SECTIONED);
+    return mode.HasFlag(rideModeFlagIsBlockSectioned);
 }
 
 bool RideHasAnyTrackElements(const Ride& ride)
@@ -5108,11 +5108,11 @@ void Ride::updateMaxVehicles()
         maxCarsPerTrain = newMaxCarsPerTrain;
         minCarsPerTrain = rideEntry->min_cars_in_train;
 
-        if (mode.hasFlag(RIDE_MODE_FLAG_IS_BLOCK_SECTIONED))
+        if (mode.HasFlag(rideModeFlagIsBlockSectioned))
         {
             maxNumTrains = std::clamp<int32_t>(numStations + numBlockBrakes - 1, 1, OpenRCT2::Limits::kMaxTrainsPerRide);
         }
-        else if (mode.hasFlag(RIDE_MODE_FLAG_SINGLE_TRAIN))
+        else if (mode.HasFlag(rideModeFlagSingleTrainOnly))
         {
             maxNumTrains = 1;
         }
@@ -5137,7 +5137,7 @@ void Ride::updateMaxVehicles()
                 totalLength += trainLength;
             } while (totalLength <= stationLength);
 
-            if ((mode != RideModes::stationToStation && mode != RideModes::continuousCircuit)
+            if ((mode != RideModes::kStationToStation && mode != RideModes::kContinuousCircuit)
                 || !(rtd.HasFlag(RtdFlag::allowMoreVehiclesThanStationFits)))
             {
                 maxNumTrains = std::min(maxNumTrains, int32_t(OpenRCT2::Limits::kMaxTrainsPerRide));
@@ -5913,7 +5913,7 @@ ResultWithMessage Ride::changeStatusGetStartElement(StationIndex stationIndex, C
 ResultWithMessage Ride::changeStatusCheckCompleteCircuit(const CoordsXYE& trackElement)
 {
     CoordsXYE problematicTrackElement = {};
-    if (mode == RideModes::race || mode == RideModes::continuousCircuit || isBlockSectioned())
+    if (mode == RideModes::kRace || mode == RideModes::kContinuousCircuit || isBlockSectioned())
     {
         if (findTrackGap(trackElement, &problematicTrackElement))
         {
@@ -5964,7 +5964,7 @@ ResultWithMessage Ride::changeStatusCheckTrackValidity(const CoordsXYE& trackEle
         }
     }
 
-    if (mode == RideModes::stationToStation)
+    if (mode == RideModes::kStationToStation)
     {
         if (!findTrackGap(trackElement, &problematicTrackElement))
         {
