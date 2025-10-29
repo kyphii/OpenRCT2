@@ -638,7 +638,7 @@ namespace OpenRCT2::Ui::Windows
             DrawTextBasic(rt, windowPos + ScreenCoordsXY{ 8, titleBarBottom + 280 }, stringId, ft);
 
             // Objective related financial information
-            if (gameState.scenarioOptions.objective.Type == Scenario::ObjectiveType::monthlyFoodIncome)
+            if (gameState.scenarioOptions.objective->IsArgumentEnabled(Scenario::kArgumentIncomeShops)
             {
                 auto lastMonthProfit = FinanceGetLastMonthShopProfit();
                 ft = Formatter();

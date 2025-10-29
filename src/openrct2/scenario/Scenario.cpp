@@ -82,7 +82,7 @@ void ScenarioBegin(GameState_t& gameState)
     GameLoadInit();
     ScenarioReset(gameState);
 
-    if (gameState.scenarioOptions.objective.Type != ObjectiveType::none && !gLoadKeepWindowsOpen)
+    if (gameState.scenarioOptions.objective != nullptr && !gLoadKeepWindowsOpen)
         ContextOpenWindowView(WindowView::parkObjective);
 
     gScreenAge = 0;
@@ -284,20 +284,7 @@ static void ScenarioDayUpdate(GameState_t& gameState)
 {
     FinanceUpdateDailyProfit();
     PeepUpdateDaysInQueue();
-    switch (gameState.scenarioOptions.objective.Type)
-    {
-        case ObjectiveType::tenRollercoasters:
-        case ObjectiveType::guestsAndRating:
-        case ObjectiveType::tenRollercoastersLength:
-        case ObjectiveType::finishFiveRollercoasters:
-        case ObjectiveType::repayLoanAndParkValue:
-            ScenarioCheckObjective(gameState);
-            break;
-        default:
-            if (AllowEarlyCompletion())
-                ScenarioCheckObjective(gameState);
-            break;
-    }
+    ScenarioCheckObjective(gameState);
 
     auto& park = gameState.park;
 
@@ -527,7 +514,17 @@ uint32_t ScenarioRandMax(uint32_t max)
  */
 static ResultWithMessage ScenarioPrepareRidesForSave(GameState_t& gameState)
 {
-    bool isFiveCoasterObjective = gameState.scenarioOptions.objective.Type == ObjectiveType::finishFiveRollercoasters;
+    bool isCompleteCoasterObjective = gameState.scenarioOptions.objective->IsArgumentEnabled(kArgumentCoasterCompleteExisting);
+    uint16_t requiredIncompleteCoasters = 0;
+    if (isCompleteCoasterObjective)
+    {
+        requiredIncompleteCoasters = gameState.scenarioOptions.objective->GetArgumentNumberByDescriptor(
+            kArgumentCoasterCount);
+        if (requiredIncompleteCoasters == 0)
+        {
+            return { false, STR_NOT_ENOUGH_ROLLER_COASTERS };
+        }
+    }
     uint8_t rcs = 0;
 
     for (auto& ride : RideManager(gameState))
@@ -535,8 +532,9 @@ static ResultWithMessage ScenarioPrepareRidesForSave(GameState_t& gameState)
         const auto* rideEntry = ride.getRideEntry();
         if (rideEntry != nullptr)
         {
-            // If there are more than 5 roller coasters, only mark the first five.
-            if (isFiveCoasterObjective && (RideEntryHasCategory(*rideEntry, RideCategory::rollerCoaster) && rcs < 5))
+            // If there are more than N roller coasters, only mark the first N.
+            if (isCompleteCoasterObjective
+                && (RideEntryHasCategory(*rideEntry, RideCategory::rollerCoaster) && rcs < requiredIncompleteCoasters))
             {
                 ride.lifecycleFlags |= RIDE_LIFECYCLE_INDESTRUCTIBLE_TRACK;
                 rcs++;
@@ -548,7 +546,7 @@ static ResultWithMessage ScenarioPrepareRidesForSave(GameState_t& gameState)
         }
     }
 
-    if (isFiveCoasterObjective && rcs < 5)
+    if (isCompleteCoasterObjective && rcs < requiredIncompleteCoasters)
     {
         return { false, STR_NOT_ENOUGH_ROLLER_COASTERS };
     }
@@ -562,11 +560,11 @@ static ResultWithMessage ScenarioPrepareRidesForSave(GameState_t& gameState)
         {
             markTrackAsIndestructible = false;
 
-            if (isFiveCoasterObjective)
+            if (isCompleteCoasterObjective)
             {
                 auto ride = GetRide(it.element->AsTrack()->GetRideIndex());
 
-                // In the previous step, this flag was set on the first five roller coasters.
+                // In the previous step, this flag was set on the first N roller coasters.
                 if (ride != nullptr && ride->lifecycleFlags & RIDE_LIFECYCLE_INDESTRUCTIBLE_TRACK)
                 {
                     markTrackAsIndestructible = true;
@@ -593,8 +591,10 @@ ResultWithMessage ScenarioPrepareForSave(GameState_t& gameState)
         return { false, prepareRidesResult.Message };
     }
 
-    if (gameState.scenarioOptions.objective.Type == ObjectiveType::guestsAndRating)
+    if (gameState.scenarioOptions.objective->IsArgumentEnabled(kArgumentSustainParkRating))
+    {
         gameState.park.flags |= PARK_FLAGS_PARK_OPEN;
+    }
 
     ScenarioReset(gameState);
 
@@ -621,7 +621,7 @@ bool AllowEarlyCompletion()
 static void ScenarioCheckObjective(GameState_t& gameState)
 {
     auto& park = gameState.park;
-    auto status = gameState.scenarioOptions.objective.Check(park, gameState);
+    auto status = gameState.scenarioOptions.objective->ScenarioEvaluateObjective(park, gameState);
     if (status == ObjectiveStatus::Success)
     {
         ScenarioSuccess(gameState);

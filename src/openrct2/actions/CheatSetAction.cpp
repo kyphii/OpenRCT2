@@ -232,7 +232,8 @@ namespace OpenRCT2::GameActions
                 ParkSetOpen(!Park::IsOpen(gameState.park), gameState);
                 break;
             case CheatType::haveFun:
-                gameState.scenarioOptions.objective.Type = Scenario::ObjectiveType::haveFun;
+                gameState.scenarioOptions.objective = Scenario::ScenarioObjectiveInitFromPreset(
+                    Scenario::kObjectivePresetHaveFun);
                 break;
             case CheatType::setForcedParkRating:
                 Park::SetForcedRating(_param1);

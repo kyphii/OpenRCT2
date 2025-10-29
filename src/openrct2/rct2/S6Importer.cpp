@@ -224,10 +224,8 @@ namespace OpenRCT2::RCT2
             *dst = {};
 
             dst->Category = _s6.Info.Category;
-            dst->ObjectiveType = _s6.Info.ObjectiveType;
-            dst->ObjectiveArg1 = _s6.Info.ObjectiveArg1;
-            dst->ObjectiveArg2 = _s6.Info.ObjectiveArg2;
-            dst->ObjectiveArg3 = _s6.Info.ObjectiveArg3;
+
+            dst->Objective = ScenarioObjectiveInitFromLegacyType(_s6.Info.ObjectiveType, _s6.Info.ObjectiveArg1, _s6.Info.ObjectiveArg2, _s6.Info.ObjectiveArg3);
             dst->Highscore = nullptr;
 
             if (String::isNullOrEmpty(_s6.Info.Name))
@@ -445,16 +443,16 @@ namespace OpenRCT2::RCT2
             gameState.scenarioOptions.guestInitialCash = ToMoney64(_s6.GuestInitialCash);
             gameState.scenarioOptions.guestInitialHunger = _s6.GuestInitialHunger;
             gameState.scenarioOptions.guestInitialThirst = _s6.GuestInitialThirst;
-            gameState.scenarioOptions.objective.Type = _s6.ObjectiveType;
-            gameState.scenarioOptions.objective.Year = _s6.ObjectiveYear;
-            // Pad013580FA
-            gameState.scenarioOptions.objective.Currency = _s6.ObjectiveCurrency;
+            uint16_t arg3;
             // In RCT2, the ride string IDs start at index STR_0002 and are directly mappable.
             // This is not always the case in OpenRCT2, so we use the actual ride ID.
-            if (gameState.scenarioOptions.objective.Type == Scenario::ObjectiveType::buildTheBest)
-                gameState.scenarioOptions.objective.RideId = _s6.ObjectiveGuests - kRCT2RideStringStart;
+            if (_s6.ObjectiveType == Scenario::LegacyObjectiveType::buildTheBest)
+                arg3 = _s6.ObjectiveGuests - kRCT2RideStringStart;
             else
-                gameState.scenarioOptions.objective.NumGuests = _s6.ObjectiveGuests;
+                arg3 = _s6.ObjectiveCurrency;
+            gameState.scenarioOptions.objective = ScenarioObjectiveInitFromLegacyType(
+                _s6.ObjectiveType, _s6.ObjectiveYear, _s6.ObjectiveGuests, arg3);
+            
             ImportMarketingCampaigns(park);
 
             park.currentExpenditure = ToMoney64(_s6.CurrentExpenditure);

@@ -34,6 +34,7 @@
 #include "../ride/RideManager.hpp"
 #include "../ride/ShopItem.h"
 #include "../scenario/Scenario.h"
+#include "../scenario/ScenarioObjective.h"
 #include "../scripting/ScriptEngine.h"
 #include "../ui/WindowManager.h"
 #include "../util/Util.h"
@@ -307,9 +308,7 @@ namespace OpenRCT2::Park
         gameState.scenarioOptions.guestInitialHappiness = Park::CalculateGuestInitialHappiness(50);
         gameState.scenarioOptions.guestInitialHunger = 200;
         gameState.scenarioOptions.guestInitialThirst = 200;
-        gameState.scenarioOptions.objective.Type = Scenario::ObjectiveType::guestsBy;
-        gameState.scenarioOptions.objective.Year = 4;
-        gameState.scenarioOptions.objective.NumGuests = 1000;
+        gameState.scenarioOptions.objective = ScenarioObjectiveInitFromPreset(Scenario::kObjectivePresetGuestsBy);
         gameState.scenarioOptions.landPrice = 90.00_GBP;
         gameState.scenarioOptions.constructionRightsPrice = 40.00_GBP;
         park.flags = PARK_FLAGS_NO_MONEY | PARK_FLAGS_SHOW_REAL_GUEST_NAMES;

@@ -21,7 +21,7 @@ enum class VehicleColourSettings : uint8_t;
 
 namespace OpenRCT2::Scenario
 {
-    enum class ObjectiveType : uint8_t;
+    enum class LegacyObjectiveType : uint8_t;
 }
 
 namespace OpenRCT2::RCT1
@@ -819,7 +819,7 @@ namespace OpenRCT2::RCT1
         money16 GuestInitialCash;
         uint8_t GuestInitialHunger;
         uint8_t GuestInitialThirst;
-        Scenario::ObjectiveType ScenarioObjectiveType;
+        Scenario::LegacyObjectiveType ScenarioObjectiveType;
         uint8_t ScenarioObjectiveYears;
         uint16_t Unk199552;
         money32 ScenarioObjectiveCurrency;

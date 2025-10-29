@@ -19,6 +19,8 @@
     #include "../../Duktape.hpp"
     #include "../../ScriptEngine.h"
 
+// TODO: Figure out what to do with all this
+
 namespace OpenRCT2::Scripting
 {
     using namespace OpenRCT2::Scenario;

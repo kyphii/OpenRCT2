@@ -39,6 +39,8 @@
 
 using namespace OpenRCT2::Drawing;
 
+// TODO: Rewrite objective editor
+
 namespace OpenRCT2::Ui::Windows
 {
     static constexpr ScreenSize kSizeObjective = { 450, 122 };

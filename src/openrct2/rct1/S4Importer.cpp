@@ -240,19 +240,19 @@ namespace OpenRCT2::RCT1
             dst->SourceIndex = desc.index;
             dst->ScenarioId = desc.id;
 
-            dst->ObjectiveType = _s4.ScenarioObjectiveType;
-            dst->ObjectiveArg1 = _s4.ScenarioObjectiveYears;
+            uint16_t objectiveArg2, objectiveArg3;
             // RCT1 used another way of calculating park value.
-            if (_s4.ScenarioObjectiveType == Scenario::ObjectiveType::parkValueBy)
-                dst->ObjectiveArg2 = CorrectRCT1ParkValue(_s4.ScenarioObjectiveCurrency);
+            if (_s4.ScenarioObjectiveType == Scenario::LegacyObjectiveType::parkValueBy)
+                objectiveArg2 = CorrectRCT1ParkValue(_s4.ScenarioObjectiveCurrency);
             else
-                dst->ObjectiveArg2 = _s4.ScenarioObjectiveCurrency;
-            dst->ObjectiveArg3 = _s4.ScenarioObjectiveNumGuests;
+                objectiveArg2 = _s4.ScenarioObjectiveCurrency;
+            objectiveArg3 = _s4.ScenarioObjectiveNumGuests;
             // This does not seem to be saved in the objective arguments, so look up the ID from the available rides instead.
-            if (_s4.ScenarioObjectiveType == Scenario::ObjectiveType::buildTheBest)
+            if (_s4.ScenarioObjectiveType == Scenario::LegacyObjectiveType::buildTheBest)
             {
-                dst->ObjectiveArg3 = GetBuildTheBestRideId();
+                objectiveArg3 = GetBuildTheBestRideId();
             }
+            dst->Objective = ScenarioObjectiveInitFromLegacyType(_s4.ScenarioObjectiveType, _s4.ScenarioObjectiveYears, objectiveArg2, objectiveArg3);
 
             std::string name = RCT2StringToUTF8(_s4.ScenarioName, RCT2LanguageId::englishUK);
             std::string details;
@@ -2443,21 +2443,20 @@ namespace OpenRCT2::RCT1
 
         void ImportScenarioObjective(GameState_t& gameState)
         {
-            gameState.scenarioOptions.objective.Type = _s4.ScenarioObjectiveType;
-            gameState.scenarioOptions.objective.Year = _s4.ScenarioObjectiveYears;
-            gameState.scenarioOptions.objective.NumGuests = _s4.ScenarioObjectiveNumGuests;
-
-            // RCT1 used a different way of calculating the park value.
-            // This is corrected here, but since scenario_objective_currency doubles as minimum excitement rating,
-            // we need to check the goal to avoid affecting scenarios like Volcania.
-            if (_s4.ScenarioObjectiveType == Scenario::ObjectiveType::parkValueBy)
-                gameState.scenarioOptions.objective.Currency = CorrectRCT1ParkValue(_s4.ScenarioObjectiveCurrency);
+            uint16_t objectiveArg2, objectiveArg3;
+            // RCT1 used another way of calculating park value.
+            if (_s4.ScenarioObjectiveType == Scenario::LegacyObjectiveType::parkValueBy)
+                objectiveArg2 = CorrectRCT1ParkValue(_s4.ScenarioObjectiveCurrency);
             else
-                gameState.scenarioOptions.objective.Currency = ToMoney64(_s4.ScenarioObjectiveCurrency);
-
+                objectiveArg2 = ToMoney64(_s4.ScenarioObjectiveCurrency);
+            objectiveArg3 = _s4.ScenarioObjectiveNumGuests;
             // This does not seem to be saved in the objective arguments, so look up the ID from the available rides instead.
-            if (_s4.ScenarioObjectiveType == Scenario::ObjectiveType::buildTheBest)
-                gameState.scenarioOptions.objective.RideId = GetBuildTheBestRideId();
+            if (_s4.ScenarioObjectiveType == Scenario::LegacyObjectiveType::buildTheBest)
+            {
+                objectiveArg3 = GetBuildTheBestRideId();
+            }
+            gameState.scenarioOptions.objective = ScenarioObjectiveInitFromLegacyType(
+                _s4.ScenarioObjectiveType, _s4.ScenarioObjectiveYears, objectiveArg2, objectiveArg3);
         }
 
         void ImportSavedView(GameState_t& gameState)
