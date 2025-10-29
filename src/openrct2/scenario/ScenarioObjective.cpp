@@ -18,90 +18,97 @@
 
 namespace OpenRCT2::Scenario
 {
-    ObjectiveStatus Objective::CheckGuestsBy(Park::ParkData& park, GameState_t& gameState) const
+    // For convenience
+    static ObjectiveStatus StatusFromBool(bool input)
     {
-        auto parkRating = park.rating;
-        int32_t currentMonthYear = GetDate().GetMonthsElapsed();
+        return (input) ? ObjectiveStatus::Success : ObjectiveStatus::Undecided;
+    }
 
-        if (currentMonthYear == MONTH_COUNT * Year || AllowEarlyCompletion())
+    ObjectiveStatus ScenarioObjective::ScenarioEvaluateObjective(Park::ParkData& park, GameState_t& gameState) const
+    {
+        ObjectiveStatus status = ObjectiveStatus::Success;
+
+        bool hasDeadline = this->deadlineYear > 0;
+        bool atDeadline = hasDeadline && (GetDate().GetMonthsElapsed() >= this->deadlineYear * MONTH_COUNT);
+        bool earlyCompletionEnabled = AllowEarlyCompletion();
+        bool eligibleForCompletion = earlyCompletionEnabled || atDeadline;
+
+        for (auto& goal : this->goals)
         {
-            if (parkRating >= 600 && park.numGuestsInPark >= NumGuests)
-            {
-                return ObjectiveStatus::Success;
-            }
-
-            if (currentMonthYear == MONTH_COUNT * Year)
+            const auto& goalStatus = goal.Evaluate(park, gameState);
+            if (goalStatus == ObjectiveStatus::Failure)
             {
                 return ObjectiveStatus::Failure;
             }
-        }
-
-        return ObjectiveStatus::Undecided;
-    }
-
-    ObjectiveStatus Objective::CheckParkValueBy(Park::ParkData& park, GameState_t& gameState) const
-    {
-        int32_t currentMonthYear = GetDate().GetMonthsElapsed();
-        money64 objectiveParkValue = Currency;
-        money64 parkValue = park.value;
-
-        if (currentMonthYear == MONTH_COUNT * Year || AllowEarlyCompletion())
-        {
-            if (parkValue >= objectiveParkValue)
+            else if (goalStatus == ObjectiveStatus::Undecided)
             {
-                return ObjectiveStatus::Success;
-            }
-
-            if (currentMonthYear == MONTH_COUNT * Year)
-            {
-                return ObjectiveStatus::Failure;
+                eligibleForCompletion = false;
             }
         }
 
-        return ObjectiveStatus::Undecided;
-    }
-
-    /**
-     * Checks if there are 10 rollercoasters of different subtype with
-     * excitement >= 600 .
-     * rct2:
-     **/
-    ObjectiveStatus Objective::Check10RollerCoasters(Park::ParkData& park, GameState_t& gameState) const
-    {
-        auto rcs = 0;
-        BitSet<kMaxRideObjects> type_already_counted;
-        for (const auto& ride : RideManager(gameState))
-        {
-            if (ride.status == RideStatus::open && ride.ratings.excitement >= RideRating::make(6, 00)
-                && ride.subtype != kObjectEntryIndexNull)
-            {
-                auto rideEntry = ride.getRideEntry();
-                if (rideEntry != nullptr)
-                {
-                    if (RideEntryHasCategory(*rideEntry, RideCategory::rollerCoaster) && !type_already_counted[ride.subtype])
-                    {
-                        type_already_counted[ride.subtype] = true;
-                        rcs++;
-                    }
-                }
-            }
-        }
-        if (rcs >= 10)
+        if (eligibleForCompletion)
         {
             return ObjectiveStatus::Success;
         }
-
-        return ObjectiveStatus::Undecided;
+        else if (atDeadline)
+        {
+            return ObjectiveStatus::Failure;
+        }
+        else
+        {
+            return ObjectiveStatus::Undecided;
+        }
     }
 
-    /**
-     *
-     *  rct2: 0x0066A13C
-     */
-    ObjectiveStatus Objective::CheckGuestsAndRating(Park::ParkData& park, GameState_t& gameState) const
+    ObjectiveStatus ScenarioGoal::Evaluate(Park::ParkData& park, GameState_t& gameState) const
     {
-        // TODO: make park-specific
-        if (park.rating < 700 && GetDate().GetMonthsElapsed() >= 1)
+        return this->descriptor->evaluationFunction(park, gameState, this);
+    }
+
+    bool ScenarioGoal::GetModifierEnabled(size_t listIndex) const
+    {
+        Guard::Assert(this->values.at(listIndex).descriptor->type == GoalModifierType::boolean);
+        return this->values.at(listIndex).enabled;
+    }
+
+    uint16_t ScenarioGoal::GetModifierValueNumber(size_t listIndex) const
+    {
+        Guard::Assert(this->values.at(listIndex).descriptor->type == GoalModifierType::number);
+        return this->values.at(listIndex).value.number;
+    }
+
+    money64 ScenarioGoal::GetModifierValueMoney(size_t listIndex) const
+    {
+        Guard::Assert(this->values.at(listIndex).descriptor->type == GoalModifierType::money);
+        return this->values.at(listIndex).value.money;
+    }
+
+    RideRating_t ScenarioGoal::GetModifierValueRating(size_t listIndex) const
+    {
+        Guard::Assert(this->values.at(listIndex).descriptor->type == GoalModifierType::rating);
+        return this->values.at(listIndex).value.rating;
+    }
+
+    uint16_t ScenarioGoal::GetModifierValueDistance(size_t listIndex) const
+    {
+        Guard::Assert(this->values.at(listIndex).descriptor->type == GoalModifierType::distance);
+        return this->values.at(listIndex).value.number;
+    }
+
+    ObjectiveStatus GoalDescriptor::GoalEvaluateGuests(Park::ParkData& park, GameState_t& gameState, const ScenarioGoal& goal)
+    {
+        uint16_t reqGuestCount = goal.GetModifierValueNumber(0);
+        return StatusFromBool(park.numGuestsInPark >= reqGuestCount);
+    }
+
+    ObjectiveStatus GoalDescriptor::GoalEvaluateParkRating(
+        Park::ParkData& park, GameState_t& gameState, const ScenarioGoal& goal)
+    {
+        uint16_t reqParkRating = goal.GetModifierValueNumber(0);
+        bool reqSustain = goal.GetModifierEnabled(1);
+
+        // Handle warning & failure thresholds for sustained park rating
+        if (reqSustain && park.rating < reqParkRating && GetDate().GetMonthsElapsed() >= 1)
         {
             gameState.scenarioParkRatingWarningDays++;
             if (gameState.scenarioParkRatingWarningDays == 1)
@@ -145,164 +152,93 @@ namespace OpenRCT2::Scenario
             gameState.scenarioParkRatingWarningDays = 0;
         }
 
-        if (park.rating >= 700)
-            if (park.numGuestsInPark >= NumGuests)
-                return ObjectiveStatus::Success;
-
-        return ObjectiveStatus::Undecided;
+        return StatusFromBool(park.rating >= reqParkRating);
     }
 
-    ObjectiveStatus Objective::CheckMonthlyRideIncome(Park::ParkData& park, GameState_t& gameState) const
+    ObjectiveStatus GoalDescriptor::GoalEvaluateParkValue(
+        Park::ParkData& park, GameState_t& gameState, const ScenarioGoal& goal)
     {
+        money64 reqParkValue = goal.GetModifierValueMoney(0);
+        return StatusFromBool(park.value >= reqParkValue);
+    }
+
+    ObjectiveStatus GoalDescriptor::GoalEvaluateLoan(Park::ParkData& park, GameState_t& gameState, const ScenarioGoal& goal)
+    {
+        return StatusFromBool(park.bankLoan <= 0);
+    }
+
+    ObjectiveStatus GoalDescriptor::GoalEvaluateIncomeRides(
+        Park::ParkData& park, GameState_t& gameState, const ScenarioGoal& goal)
+    {
+        money64 reqIncome = goal.GetModifierValueMoney(0);
         money64 lastMonthRideIncome = park.expenditureTable[1][EnumValue(ExpenditureType::parkRideTickets)];
-        if (lastMonthRideIncome >= Currency)
-        {
-            return ObjectiveStatus::Success;
-        }
-
-        return ObjectiveStatus::Undecided;
+        return StatusFromBool(lastMonthRideIncome >= reqIncome);
     }
 
-    /**
-     * Checks if there are 10 rollercoasters of different subtype with
-     * excitement > 700 and a minimum length;
-     *  rct2: 0x0066A6B5
-     */
-    ObjectiveStatus Objective::Check10RollerCoastersLength(Park::ParkData& park, GameState_t& gameState) const
+    ObjectiveStatus GoalDescriptor::GoalEvaluateIncomeShops(
+        Park::ParkData& park, GameState_t& gameState, const ScenarioGoal& goal)
     {
-        BitSet<kMaxRideObjects> type_already_counted;
-        auto rcs = 0;
-        for (const auto& ride : RideManager(gameState))
-        {
-            if (ride.status == RideStatus::open && ride.ratings.excitement >= RideRating::make(7, 00)
-                && ride.subtype != kObjectEntryIndexNull)
-            {
-                auto rideEntry = ride.getRideEntry();
-                if (rideEntry != nullptr)
-                {
-                    if (RideEntryHasCategory(*rideEntry, RideCategory::rollerCoaster) && !type_already_counted[ride.subtype])
-                    {
-                        if (ToHumanReadableRideLength(ride.getTotalLength()) >= MinimumLength)
-                        {
-                            type_already_counted[ride.subtype] = true;
-                            rcs++;
-                        }
-                    }
-                }
-            }
-        }
-        if (rcs >= 10)
-        {
-            return ObjectiveStatus::Success;
-        }
-
-        return ObjectiveStatus::Undecided;
-    }
-
-    ObjectiveStatus Objective::CheckFinish5RollerCoasters(Park::ParkData& park, GameState_t& gameState) const
-    {
-        // Originally, this did not check for null rides, neither did it check if
-        // the rides are even rollercoasters, never mind the right rollercoasters to be finished.
-        auto rcs = 0;
-        for (const auto& ride : RideManager(gameState))
-        {
-            if (ride.status != RideStatus::closed && ride.ratings.excitement >= MinimumExcitement)
-            {
-                auto rideEntry = ride.getRideEntry();
-                if (rideEntry != nullptr)
-                {
-                    if ((ride.lifecycleFlags & RIDE_LIFECYCLE_INDESTRUCTIBLE_TRACK)
-                        && RideEntryHasCategory(*rideEntry, RideCategory::rollerCoaster))
-                    {
-                        rcs++;
-                    }
-                }
-            }
-        }
-        if (rcs >= 5)
-        {
-            return ObjectiveStatus::Success;
-        }
-
-        return ObjectiveStatus::Undecided;
-    }
-
-    ObjectiveStatus Objective::CheckRepayLoanAndParkValue(Park::ParkData& park, GameState_t& gameState) const
-    {
-        money64 parkValue = park.value;
-        money64 currentLoan = park.bankLoan;
-
-        if (currentLoan <= 0 && parkValue >= Currency)
-        {
-            return ObjectiveStatus::Success;
-        }
-
-        return ObjectiveStatus::Undecided;
-    }
-
-    ObjectiveStatus Objective::CheckMonthlyFoodIncome(Park::ParkData& park, GameState_t& gameState) const
-    {
+        money64 reqIncome = goal.GetModifierValueMoney(0);
         const auto* lastMonthExpenditure = park.expenditureTable[1];
         auto lastMonthProfit = lastMonthExpenditure[EnumValue(ExpenditureType::shopSales)]
             + lastMonthExpenditure[EnumValue(ExpenditureType::shopStock)]
             + lastMonthExpenditure[EnumValue(ExpenditureType::foodDrinkSales)]
             + lastMonthExpenditure[EnumValue(ExpenditureType::foodDrinkStock)];
-
-        if (lastMonthProfit >= Currency)
-        {
-            return ObjectiveStatus::Success;
-        }
-
-        return ObjectiveStatus::Undecided;
+        return StatusFromBool(lastMonthProfit >= reqIncome);
     }
 
-    /**
-     * Checks the win/lose conditions of the current objective.
-     *  rct2: 0x0066A4B2
-     */
-    ObjectiveStatus Objective::Check(Park::ParkData& park, GameState_t& gameState) const
+    static bool CoasterQualifiesForGoal(
+        const Ride& ride, const RideObjectEntry* rideEntry, RideRating_t reqExcitement, bool isLengthRequired,
+        uint16_t reqLength)
     {
-        if (gameState.scenarioCompletedCompanyValue != kMoney64Undefined)
+        if (ride.ratings.excitement < reqExcitement)
         {
-            return ObjectiveStatus::Undecided;
+            return false;
         }
-
-        switch (Type)
+        if (isLengthRequired && ToHumanReadableRideLength(ride.getTotalLength() < reqLength))
         {
-            case ObjectiveType::guestsBy:
-                return CheckGuestsBy(park, gameState);
-            case ObjectiveType::parkValueBy:
-                return CheckParkValueBy(park, gameState);
-            case ObjectiveType::tenRollercoasters:
-                return Check10RollerCoasters(park, gameState);
-            case ObjectiveType::guestsAndRating:
-                return CheckGuestsAndRating(park, gameState);
-            case ObjectiveType::monthlyRideIncome:
-                return CheckMonthlyRideIncome(park, gameState);
-            case ObjectiveType::tenRollercoastersLength:
-                return Check10RollerCoastersLength(park, gameState);
-            case ObjectiveType::finishFiveRollercoasters:
-                return CheckFinish5RollerCoasters(park, gameState);
-            case ObjectiveType::repayLoanAndParkValue:
-                return CheckRepayLoanAndParkValue(park, gameState);
-            case ObjectiveType::monthlyFoodIncome:
-                return CheckMonthlyFoodIncome(park, gameState);
-            default:
-                return ObjectiveStatus::Undecided;
+            return false;
         }
+        return true;
     }
 
-    bool ObjectiveNeedsMoney(const ObjectiveType objective)
+    ObjectiveStatus GoalDescriptor::GoalEvaluateRollerCoasters(
+        Park::ParkData& park, GameState_t& gameState, const ScenarioGoal& goal)
     {
-        switch (objective)
+        uint16_t reqCoasterCount = goal.GetModifierValueNumber(0);
+        RideRating_t reqCoasterExcitement = goal.GetModifierValueRating(1);
+        bool coasterLengthRequired = goal.GetModifierEnabled(2);
+        uint16_t reqCoasterLength = goal.GetModifierValueDistance(2);
+        bool coasterCompletionRequired = goal.GetModifierEnabled(3);
+
+        BitSet<kMaxRideObjects> type_already_counted;
+        uint16_t qualifiedCoasters = 0;
+        for (const auto& ride : RideManager(gameState))
         {
-            case ObjectiveType::parkValueBy:
-            case ObjectiveType::monthlyRideIncome:
-            case ObjectiveType::repayLoanAndParkValue:
-            case ObjectiveType::monthlyFoodIncome:
-                return true;
-            default:
-                return false;
+            auto rideEntry = ride.getRideEntry();
+            if (rideEntry != nullptr && ride.status == RideStatus::open
+                && RideEntryHasCategory(*rideEntry, RideCategory::rollerCoaster))
+            {
+                if (coasterCompletionRequired)
+                {
+                    // Check for pre-existing rides based on whether indestructible track is present
+                    if ((ride.lifecycleFlags & RIDE_LIFECYCLE_INDESTRUCTIBLE_TRACK)
+                        && CoasterQualifiesForGoal(
+                            ride, rideEntry, reqCoasterExcitement, coasterLengthRequired, reqCoasterLength))
+                    {
+                        qualifiedCoasters++;
+                    }
+                }
+                else if (
+                    ride.subtype != kObjectEntryIndexNull && !type_already_counted[ride.subtype]
+                    && CoasterQualifiesForGoal(ride, rideEntry, reqCoasterExcitement, coasterLengthRequired, reqCoasterLength))
+                {
+                    type_already_counted[ride.subtype] = true;
+                    qualifiedCoasters++;
+                }
+            }
         }
+
+        return StatusFromBool(qualifiedCoasters >= reqCoasterCount);
     }
 } // namespace OpenRCT2::Scenario
