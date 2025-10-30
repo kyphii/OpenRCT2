@@ -39,8 +39,6 @@
 
 using namespace OpenRCT2::Drawing;
 
-// TODO: Rewrite objective editor
-
 namespace OpenRCT2::Ui::Windows
 {
     static constexpr ScreenSize kSizeObjective = { 450, 122 };
@@ -49,31 +47,6 @@ namespace OpenRCT2::Ui::Windows
     static constexpr ScreenSize kSizeGuests = { 380, 154 };
     static constexpr ScreenSize kSizeLand = { 268, 134 };
     static constexpr ScreenSize kSizeRides = { 380, 224 };
-
-    static constexpr money64 kObjectiveCurrencyLoanAndValueMax = 2000000.00_GBP;
-    static constexpr money64 kObjectiveCurrencyLoanAndValueMin = 1000.00_GBP;
-    static constexpr money64 kObjectiveCurrencyLoanAndValueAdjustment = 1000.00_GBP;
-
-    static constexpr money64 kObjectiveCurrencyFoodMax = 2000000.00_GBP;
-    static constexpr money64 kObjectiveCurrencyFoodMin = 1000.00_GBP;
-    static constexpr money64 kObjectiveCurrencyFoodAdjustment = 100.00_GBP;
-
-    static constexpr uint16_t kObjectiveLengthMax = 5000;
-    static constexpr uint16_t kObjectiveLengthMin = 1000;
-    static constexpr uint16_t kObjectiveLengthAdjustment = 100;
-
-    static constexpr RideRating_t kObjectiveExcitementMax = RideRating::make(9, 90);
-    static constexpr RideRating_t kObjectiveExcitementMin = RideRating::make(4, 00);
-    static constexpr RideRating_t kObjectiveExcitementAdjustment = RideRating::make(0, 10);
-
-    // The number has to leave a bit of room for other entities like vehicles, litter and balloons.
-    static constexpr uint16_t kObjectiveGuestsMax = 50000;
-    static constexpr uint16_t kObjectiveGuestsMin = 250;
-    static constexpr uint16_t kObjectiveGuestsAdjustment = 50;
-
-    static constexpr uint8_t kObjectiveYearMax = 25;
-    static constexpr uint8_t kObjectiveYearMin = 1;
-    static constexpr uint8_t kObjectiveYearAdjustment = 1;
 
 #pragma region Widgets
 
@@ -346,6 +319,8 @@ namespace OpenRCT2::Ui::Windows
     private:
         // Not shops or facilities
         std::vector<RideId> _rideableRides;
+        // Last objective type selected
+        Scenario::LegacyObjectiveType objectiveType;
 
     public:
         void onOpen() override
@@ -687,78 +662,37 @@ namespace OpenRCT2::Ui::Windows
          *
          *  rct2: 0x0067201D
          */
-        void SetObjective(Scenario::ObjectiveType objective)
+        void SetObjective(Scenario::LegacyObjectiveType objective)
         {
             auto& gameState = getGameState();
             auto& scenarioOptions = gameState.scenarioOptions;
 
-            scenarioOptions.objective.Type = objective;
+            // Load and populate default values
+            scenarioOptions.objective = Scenario::ScenarioObjectiveInitFromLegacyType(objective);
             invalidate();
-
-            // Set default objective arguments
-            switch (objective)
-            {
-                case Scenario::ObjectiveType::none:
-                case Scenario::ObjectiveType::haveFun:
-                case Scenario::ObjectiveType::buildTheBest:
-                case Scenario::ObjectiveType::tenRollercoasters:
-                    break;
-                case Scenario::ObjectiveType::guestsBy:
-                    scenarioOptions.objective.Year = 3;
-                    scenarioOptions.objective.NumGuests = 1500;
-                    break;
-                case Scenario::ObjectiveType::parkValueBy:
-                    scenarioOptions.objective.Year = 3;
-                    scenarioOptions.objective.Currency = 50000.00_GBP;
-                    break;
-                case Scenario::ObjectiveType::guestsAndRating:
-                    scenarioOptions.objective.NumGuests = 2000;
-                    break;
-                case Scenario::ObjectiveType::monthlyRideIncome:
-                    scenarioOptions.objective.Currency = 10000.00_GBP;
-                    break;
-                case Scenario::ObjectiveType::tenRollercoastersLength:
-                    scenarioOptions.objective.MinimumLength = 1200;
-                    break;
-                case Scenario::ObjectiveType::finishFiveRollercoasters:
-                    scenarioOptions.objective.MinimumExcitement = RideRating::make(6, 70);
-                    break;
-                case Scenario::ObjectiveType::repayLoanAndParkValue:
-                    scenarioOptions.objective.Currency = 50000.00_GBP;
-                    break;
-                case Scenario::ObjectiveType::monthlyFoodIncome:
-                    scenarioOptions.objective.Currency = 1000.00_GBP;
-                    break;
-                default:
-                    break;
-            }
+            // Store currently set legacy objective
+            objectiveType = objective;
         }
 
         void ShowObjectiveDropdown()
         {
             const auto& gameState = getGameState();
             const auto& scenarioOptions = gameState.scenarioOptions;
-            auto objectiveType = EnumValue(scenarioOptions.objective.Type);
 
             int32_t numItems = 0;
-            for (auto i = 0; i < EnumValue(Scenario::ObjectiveType::count); i++)
+            for (auto i = 0; i < EnumValue(Scenario::LegacyObjectiveType::count); i++)
             {
-                auto obj = Scenario::ObjectiveType(i);
-                if (obj == Scenario::ObjectiveType::none || obj == Scenario::ObjectiveType::buildTheBest)
+                auto obj = Scenario::LegacyObjectiveType(i);
+                if (obj == Scenario::LegacyObjectiveType::none || obj == Scenario::LegacyObjectiveType::buildTheBest)
                     continue;
 
-                const bool objectiveAllowedByMoneyUsage = !(gameState.park.flags & PARK_FLAGS_NO_MONEY)
-                    || !Scenario::ObjectiveNeedsMoney(obj);
+                auto descriptor = Scenario::kObjectivePresets[EnumValue(obj)];
 
-                // This objective can only work if the player can ask money for rides.
-                const bool objectiveAllowedByPaymentSettings = (obj != Scenario::ObjectiveType::monthlyRideIncome)
-                    || Park::RidePricesUnlocked();
-
-                if (objectiveAllowedByMoneyUsage && objectiveAllowedByPaymentSettings)
+                if (descriptor->IsValidForSettings(!(gameState.park.flags & PARK_FLAGS_NO_MONEY), Park::RidePricesUnlocked()))
                 {
                     gDropdown.items[numItems] = Dropdown::MenuLabel(ObjectiveDropdownOptionNames[i]);
                     gDropdown.items[numItems].value = i;
-                    if (i == objectiveType)
+                    if (i == EnumValue(obj))
                     {
                         gDropdown.items[numItems].setChecked(true);
                     }
@@ -789,167 +723,83 @@ namespace OpenRCT2::Ui::Windows
 
         void Arg1Increase()
         {
-            auto& gameState = getGameState();
-            auto& scenarioOptions = gameState.scenarioOptions;
-
-            switch (scenarioOptions.objective.Type)
+            Scenario::ScenarioGoalArgument* arg = nullptr; 
+            switch (objectiveType)
             {
-                case Scenario::ObjectiveType::parkValueBy:
-                case Scenario::ObjectiveType::monthlyRideIncome:
-                case Scenario::ObjectiveType::repayLoanAndParkValue:
-                    if (scenarioOptions.objective.Currency >= kObjectiveCurrencyLoanAndValueMax)
-                    {
-                        ContextShowError(STR_CANT_INCREASE_FURTHER, kStringIdNone, {});
-                    }
-                    else
-                    {
-                        scenarioOptions.objective.Currency += kObjectiveCurrencyLoanAndValueAdjustment;
-                        invalidate();
-                    }
+                case Scenario::LegacyObjectiveType::finishFiveRollercoasters:
+                case Scenario::LegacyObjectiveType::tenRollercoasters:
+                    arg = getGameState().scenarioOptions.objective.goals[0].values[1];
                     break;
-                case Scenario::ObjectiveType::monthlyFoodIncome:
-                    if (scenarioOptions.objective.Currency >= kObjectiveCurrencyFoodMax)
-                    {
-                        ContextShowError(STR_CANT_INCREASE_FURTHER, kStringIdNone, {});
-                    }
-                    else
-                    {
-                        scenarioOptions.objective.Currency += kObjectiveCurrencyFoodAdjustment;
-                        invalidate();
-                    }
-                    break;
-                case Scenario::ObjectiveType::tenRollercoastersLength:
-                    if (scenarioOptions.objective.MinimumLength >= kObjectiveLengthMax)
-                    {
-                        ContextShowError(STR_CANT_INCREASE_FURTHER, kStringIdNone, {});
-                    }
-                    else
-                    {
-                        scenarioOptions.objective.MinimumLength += kObjectiveLengthAdjustment;
-                        invalidate();
-                    }
-                    break;
-                case Scenario::ObjectiveType::finishFiveRollercoasters:
-                    if (scenarioOptions.objective.MinimumExcitement >= kObjectiveExcitementMax)
-                    {
-                        ContextShowError(STR_CANT_INCREASE_FURTHER, kStringIdNone, {});
-                    }
-                    else
-                    {
-                        scenarioOptions.objective.MinimumExcitement += kObjectiveExcitementAdjustment;
-                        invalidate();
-                    }
+                case Scenario::LegacyObjectiveType::tenRollercoastersLength:
+                    arg = getGameState().scenarioOptions.objective.goals[0].values[2];
                     break;
                 default:
-                    if (scenarioOptions.objective.NumGuests >= kObjectiveGuestsMax)
-                    {
-                        ContextShowError(STR_CANT_INCREASE_FURTHER, kStringIdNone, {});
-                    }
-                    else
-                    {
-                        scenarioOptions.objective.NumGuests += kObjectiveGuestsAdjustment;
-                        invalidate();
-                    }
+                    arg = getGameState().scenarioOptions.objective.goals[0].values[0];
                     break;
+            }
+            if (arg != nullptr)
+            {
+                if (arg->Increment())
+                {
+                    invalidate();
+                }
+                else
+                {
+                    ContextShowError(STR_CANT_INCREASE_FURTHER, kStringIdNone, {});
+                }
             }
         }
 
         void Arg1Decrease()
         {
-            auto& gameState = getGameState();
-            auto& scenarioOptions = gameState.scenarioOptions;
-
-            switch (scenarioOptions.objective.Type)
+            Scenario::ScenarioGoalArgument* arg = nullptr;
+            switch (objectiveType)
             {
-                case Scenario::ObjectiveType::parkValueBy:
-                case Scenario::ObjectiveType::monthlyRideIncome:
-                case Scenario::ObjectiveType::repayLoanAndParkValue:
-                    if (scenarioOptions.objective.Currency <= kObjectiveCurrencyLoanAndValueMin)
-                    {
-                        ContextShowError(STR_CANT_REDUCE_FURTHER, kStringIdNone, {});
-                    }
-                    else
-                    {
-                        scenarioOptions.objective.Currency -= kObjectiveCurrencyLoanAndValueAdjustment;
-                        invalidate();
-                    }
+                case Scenario::LegacyObjectiveType::finishFiveRollercoasters:
+                case Scenario::LegacyObjectiveType::tenRollercoasters:
+                    arg = getGameState().scenarioOptions.objective.goals[0].values[1];
                     break;
-                case Scenario::ObjectiveType::monthlyFoodIncome:
-                    if (scenarioOptions.objective.Currency <= kObjectiveCurrencyFoodMin)
-                    {
-                        ContextShowError(STR_CANT_REDUCE_FURTHER, kStringIdNone, {});
-                    }
-                    else
-                    {
-                        scenarioOptions.objective.Currency -= kObjectiveCurrencyFoodAdjustment;
-                        invalidate();
-                    }
-                    break;
-                case Scenario::ObjectiveType::tenRollercoastersLength:
-                    if (scenarioOptions.objective.MinimumLength <= kObjectiveLengthMin)
-                    {
-                        ContextShowError(STR_CANT_REDUCE_FURTHER, kStringIdNone, {});
-                    }
-                    else
-                    {
-                        scenarioOptions.objective.MinimumLength -= kObjectiveLengthAdjustment;
-                        invalidate();
-                    }
-                    break;
-                case Scenario::ObjectiveType::finishFiveRollercoasters:
-                    if (scenarioOptions.objective.MinimumExcitement <= kObjectiveExcitementMin)
-                    {
-                        ContextShowError(STR_CANT_REDUCE_FURTHER, kStringIdNone, {});
-                    }
-                    else
-                    {
-                        scenarioOptions.objective.MinimumExcitement -= kObjectiveExcitementAdjustment;
-                        invalidate();
-                    }
+                case Scenario::LegacyObjectiveType::tenRollercoastersLength:
+                    arg = getGameState().scenarioOptions.objective.goals[0].values[2];
                     break;
                 default:
-                    if (scenarioOptions.objective.NumGuests <= kObjectiveGuestsMin)
-                    {
-                        ContextShowError(STR_CANT_REDUCE_FURTHER, kStringIdNone, {});
-                    }
-                    else
-                    {
-                        scenarioOptions.objective.NumGuests -= kObjectiveGuestsAdjustment;
-                        invalidate();
-                    }
+                    arg = getGameState().scenarioOptions.objective.goals[0].values[0];
                     break;
+            }
+            if (arg != nullptr)
+            {
+                if (arg->Decrement())
+                {
+                    invalidate();
+                }
+                else
+                {
+                    ContextShowError(STR_CANT_REDUCE_FURTHER, kStringIdNone, {});
+                }
             }
         }
 
         void Arg2Increase()
         {
-            auto& gameState = getGameState();
-            auto& scenarioOptions = gameState.scenarioOptions;
-
-            if (scenarioOptions.objective.Year >= kObjectiveYearMax)
+            if (getGameState().scenarioOptions.objective.IncrementDeadlineYear())
             {
-                ContextShowError(STR_CANT_INCREASE_FURTHER, kStringIdNone, {});
+                invalidate();
             }
             else
             {
-                scenarioOptions.objective.Year += kObjectiveYearAdjustment;
-                invalidate();
+                ContextShowError(STR_CANT_INCREASE_FURTHER, kStringIdNone, {});
             }
         }
 
         void Arg2Decrease()
         {
-            auto& gameState = getGameState();
-            auto& scenarioOptions = gameState.scenarioOptions;
-
-            if (scenarioOptions.objective.Year <= kObjectiveYearMin)
+            if (getGameState().scenarioOptions.objective.DecrementDeadlineYear())
             {
-                ContextShowError(STR_CANT_REDUCE_FURTHER, kStringIdNone, {});
+                invalidate();
             }
             else
             {
-                scenarioOptions.objective.Year -= kObjectiveYearAdjustment;
-                invalidate();
+                ContextShowError(STR_CANT_REDUCE_FURTHER, kStringIdNone, {});
             }
         }
 
@@ -1019,8 +869,8 @@ namespace OpenRCT2::Ui::Windows
             switch (widgetIndex)
             {
                 case WIDX_OBJECTIVE_DROPDOWN:
-                    auto newObjectiveType = static_cast<Scenario::ObjectiveType>(gDropdown.items[dropdownIndex].value);
-                    if (gameState.scenarioOptions.objective.Type != newObjectiveType)
+                    auto newObjectiveType = static_cast<Scenario::LegacyObjectiveType>(gDropdown.items[dropdownIndex].value);
+                    if (objectiveType != newObjectiveType)
                         SetObjective(newObjectiveType);
                     break;
             }
@@ -1036,20 +886,12 @@ namespace OpenRCT2::Ui::Windows
             onPrepareDraw();
             invalidateWidget(WIDX_TAB_1);
 
-            auto objectiveType = getGameState().scenarioOptions.objective.Type;
+            auto descriptor = Scenario::kObjectivePresets[EnumValue(objectiveType)];
 
-            // Check if objective is allowed by money and pay-per-ride settings.
-            const bool objectiveAllowedByMoneyUsage = !(getGameState().park.flags & PARK_FLAGS_NO_MONEY)
-                || !ObjectiveNeedsMoney(objectiveType);
-
-            // This objective can only work if the player can ask money for rides.
-            const bool objectiveAllowedByPaymentSettings = (objectiveType != Scenario::ObjectiveType::monthlyRideIncome)
-                || Park::RidePricesUnlocked();
-
-            if (!objectiveAllowedByMoneyUsage || !objectiveAllowedByPaymentSettings)
+            if (!descriptor->IsValidForSettings(!(getGameState().park.flags & PARK_FLAGS_NO_MONEY), Park::RidePricesUnlocked()))
             {
                 // Reset objective
-                SetObjective(Scenario::ObjectiveType::guestsAndRating);
+                SetObjective(Scenario::LegacyObjectiveType::guestsAndRating);
             }
         }
 
@@ -1059,14 +901,12 @@ namespace OpenRCT2::Ui::Windows
          */
         void ObjectiveOnPrepareDraw()
         {
-            auto& gameState = getGameState();
-
             SetPressedTab();
 
-            switch (gameState.scenarioOptions.objective.Type)
+            switch (objectiveType)
             {
-                case Scenario::ObjectiveType::guestsBy:
-                case Scenario::ObjectiveType::parkValueBy:
+                case Scenario::LegacyObjectiveType::guestsBy:
+                case Scenario::LegacyObjectiveType::parkValueBy:
                     widgets[WIDX_OBJECTIVE_ARG_1_LABEL].type = WidgetType::label;
                     widgets[WIDX_OBJECTIVE_ARG_1].type = WidgetType::spinner;
                     widgets[WIDX_OBJECTIVE_ARG_1_INCREASE].type = WidgetType::button;
@@ -1076,12 +916,12 @@ namespace OpenRCT2::Ui::Windows
                     widgets[WIDX_OBJECTIVE_ARG_2_INCREASE].type = WidgetType::button;
                     widgets[WIDX_OBJECTIVE_ARG_2_DECREASE].type = WidgetType::button;
                     break;
-                case Scenario::ObjectiveType::guestsAndRating:
-                case Scenario::ObjectiveType::monthlyRideIncome:
-                case Scenario::ObjectiveType::tenRollercoastersLength:
-                case Scenario::ObjectiveType::finishFiveRollercoasters:
-                case Scenario::ObjectiveType::repayLoanAndParkValue:
-                case Scenario::ObjectiveType::monthlyFoodIncome:
+                case Scenario::LegacyObjectiveType::guestsAndRating:
+                case Scenario::LegacyObjectiveType::monthlyRideIncome:
+                case Scenario::LegacyObjectiveType::tenRollercoastersLength:
+                case Scenario::LegacyObjectiveType::finishFiveRollercoasters:
+                case Scenario::LegacyObjectiveType::repayLoanAndParkValue:
+                case Scenario::LegacyObjectiveType::monthlyFoodIncome:
                     widgets[WIDX_OBJECTIVE_ARG_1_LABEL].type = WidgetType::label;
                     widgets[WIDX_OBJECTIVE_ARG_1].type = WidgetType::spinner;
                     widgets[WIDX_OBJECTIVE_ARG_1_INCREASE].type = WidgetType::button;
@@ -1107,23 +947,23 @@ namespace OpenRCT2::Ui::Windows
             if (widgets[WIDX_OBJECTIVE_ARG_1_LABEL].type != WidgetType::empty)
             {
                 // Objective argument 1 label
-                switch (gameState.scenarioOptions.objective.Type)
+                switch (objectiveType)
                 {
-                    case Scenario::ObjectiveType::guestsBy:
-                    case Scenario::ObjectiveType::guestsAndRating:
+                    case Scenario::LegacyObjectiveType::guestsBy:
+                    case Scenario::LegacyObjectiveType::guestsAndRating:
                         arg1StringId = STR_WINDOW_OBJECTIVE_GUEST_COUNT;
                         break;
-                    case Scenario::ObjectiveType::parkValueBy:
-                    case Scenario::ObjectiveType::repayLoanAndParkValue:
+                    case Scenario::LegacyObjectiveType::parkValueBy:
+                    case Scenario::LegacyObjectiveType::repayLoanAndParkValue:
                         arg1StringId = STR_WINDOW_OBJECTIVE_PARK_VALUE;
                         break;
-                    case Scenario::ObjectiveType::monthlyRideIncome:
+                    case Scenario::LegacyObjectiveType::monthlyRideIncome:
                         arg1StringId = STR_WINDOW_OBJECTIVE_MONTHLY_INCOME;
                         break;
-                    case Scenario::ObjectiveType::monthlyFoodIncome:
+                    case Scenario::LegacyObjectiveType::monthlyFoodIncome:
                         arg1StringId = STR_WINDOW_OBJECTIVE_MONTHLY_PROFIT;
                         break;
-                    case Scenario::ObjectiveType::tenRollercoastersLength:
+                    case Scenario::LegacyObjectiveType::tenRollercoastersLength:
                         arg1StringId = STR_WINDOW_OBJECTIVE_MINIMUM_LENGTH;
                         break;
                     default:
@@ -1136,7 +976,7 @@ namespace OpenRCT2::Ui::Windows
 
             widgets[WIDX_CLOSE].type = gLegacyScene == LegacyScene::scenarioEditor ? WidgetType::empty : WidgetType::closeBox;
 
-            setWidgetPressed(WIDX_HARD_PARK_RATING, gameState.park.flags & PARK_FLAGS_DIFFICULT_PARK_RATING);
+            setWidgetPressed(WIDX_HARD_PARK_RATING, getGameState().park.flags & PARK_FLAGS_DIFFICULT_PARK_RATING);
         }
 
         /**
@@ -1154,7 +994,7 @@ namespace OpenRCT2::Ui::Windows
             // Objective value
             auto screenCoords = windowPos + ScreenCoordsXY{ widgets[WIDX_OBJECTIVE].left + 1, widgets[WIDX_OBJECTIVE].top };
             auto ft = Formatter();
-            ft.Add<StringId>(ObjectiveDropdownOptionNames[EnumValue(scenarioOptions.objective.Type)]);
+            ft.Add<StringId>(ObjectiveDropdownOptionNames[EnumValue(objectiveType)]);
             DrawTextBasic(rt, screenCoords, STR_WINDOW_COLOUR_2_STRINGID, ft);
 
             if (widgets[WIDX_OBJECTIVE_ARG_1].type != WidgetType::empty)
@@ -1166,31 +1006,38 @@ namespace OpenRCT2::Ui::Windows
                 screenCoords = windowPos
                     + ScreenCoordsXY{ widgets[WIDX_OBJECTIVE_ARG_1].left + 1, widgets[WIDX_OBJECTIVE_ARG_1].top };
                 ft = Formatter();
-                switch (scenarioOptions.objective.Type)
+                switch (objectiveType)
                 {
-                    case Scenario::ObjectiveType::guestsBy:
-                    case Scenario::ObjectiveType::guestsAndRating:
+                    case Scenario::LegacyObjectiveType::guestsBy:
+                    case Scenario::LegacyObjectiveType::guestsAndRating:
                         stringId = STR_WINDOW_COLOUR_2_COMMA32;
-                        ft.Add<int32_t>(scenarioOptions.objective.NumGuests);
+                        ft.Add<int32_t>(scenarioOptions.objective.GetArgumentNumberByDescriptor(Scenario::kArgumentGuestCount));
                         break;
-                    case Scenario::ObjectiveType::parkValueBy:
-                    case Scenario::ObjectiveType::repayLoanAndParkValue:
-                    case Scenario::ObjectiveType::monthlyRideIncome:
-                    case Scenario::ObjectiveType::monthlyFoodIncome:
+                    case Scenario::LegacyObjectiveType::parkValueBy:
+                    case Scenario::LegacyObjectiveType::repayLoanAndParkValue:
                         stringId = STR_CURRENCY_FORMAT_LABEL;
-                        ft.Add<money64>(scenarioOptions.objective.Currency);
+                        ft.Add<money64>(scenarioOptions.objective.GetArgumentMoneyByDescriptor(Scenario::kArgumentParkValue));
                         break;
-                    case Scenario::ObjectiveType::tenRollercoastersLength:
+                    case Scenario::LegacyObjectiveType::monthlyRideIncome:
+                        stringId = STR_CURRENCY_FORMAT_LABEL;
+                        ft.Add<money64>(scenarioOptions.objective.GetArgumentMoneyByDescriptor(Scenario::kArgumentIncomeRides));
+                        break;
+                    case Scenario::LegacyObjectiveType::monthlyFoodIncome:
+                        stringId = STR_CURRENCY_FORMAT_LABEL;
+                        ft.Add<money64>(scenarioOptions.objective.GetArgumentMoneyByDescriptor(Scenario::kArgumentIncomeShops));
+                        break;
+                    case Scenario::LegacyObjectiveType::tenRollercoastersLength:
                         stringId = STR_WINDOW_COLOUR_2_LENGTH;
-                        ft.Add<uint16_t>(scenarioOptions.objective.MinimumLength);
+                        ft.Add<uint16_t>(scenarioOptions.objective.GetArgumentNumberByDescriptor(Scenario::kArgumentCoasterLength));
                         break;
-                    case Scenario::ObjectiveType::finishFiveRollercoasters:
+                    case Scenario::LegacyObjectiveType::finishFiveRollercoasters:
+                    case Scenario::LegacyObjectiveType::tenRollercoasters:
                         stringId = STR_WINDOW_COLOUR_2_COMMA2DP32;
-                        ft.Add<uint16_t>(scenarioOptions.objective.MinimumExcitement);
+                        ft.Add<uint16_t>(
+                            scenarioOptions.objective.GetArgumentNumberByDescriptor(Scenario::kArgumentCoasterExcitement));
                         break;
                     default:
                         stringId = STR_WINDOW_COLOUR_2_COMMA2DP32;
-                        ft.Add<money64>(scenarioOptions.objective.Currency);
                         break;
                 }
                 DrawTextBasic(rt, screenCoords, stringId, ft, wColour2);
@@ -1202,7 +1049,7 @@ namespace OpenRCT2::Ui::Windows
                 screenCoords = windowPos
                     + ScreenCoordsXY{ widgets[WIDX_OBJECTIVE_ARG_2].left + 1, widgets[WIDX_OBJECTIVE_ARG_2].top };
                 ft = Formatter();
-                ft.Add<uint16_t>((scenarioOptions.objective.Year * MONTH_COUNT) - 1);
+                ft.Add<uint16_t>((scenarioOptions.objective.deadlineYear * MONTH_COUNT) - 1);
                 DrawTextBasic(rt, screenCoords, STR_WINDOW_OBJECTIVE_VALUE_DATE, ft);
             }
         }

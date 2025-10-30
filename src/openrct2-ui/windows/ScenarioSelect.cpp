@@ -398,15 +398,9 @@ namespace OpenRCT2::Ui::Windows
             screenPos.y += DrawTextWrapped(rt, screenPos, previewPaneWidth, STR_BLACK_STRING, ft) + 5;
 
             // Scenario objective
-            // TODO : reimplement this
-            Scenario::Objective objective = { .Type = scenario->ObjectiveType,
-                                              .Year = scenario->ObjectiveArg1,
-                                              .NumGuests = static_cast<uint16_t>(scenario->ObjectiveArg3),
-                                              .Currency = scenario->ObjectiveArg2 };
-
             ft = Formatter();
             ft.Add<StringId>(scenario->Objective.format);
-            formatObjective(ft, objective);
+            formatObjective(ft, scenario->Objective);
             screenPos.y += DrawTextWrapped(rt, screenPos, previewPaneWidth, STR_OBJECTIVE, ft) + 5;
 
             // Scenario score

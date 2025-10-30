@@ -163,8 +163,20 @@ namespace OpenRCT2::Scenario
     struct ScenarioObjectiveDescriptor
     {
         StringId name{};
+        StringId dropdownDesc{};
         uint8_t deadlineYear{};
         const GoalDescriptor goals[kMaxObjectiveGoals];
+
+        bool IsValidForSettings(bool useMoney, bool canAskMoneyForRides) const
+        {
+            for (auto goal : goals)
+            {
+                if (!goal.IsValidForSettings(useMoney, canAskMoneyForRides)) {
+                    return false;
+                }
+            }
+            return true;
+        }
     };
 
     // Modifiable argument container for active scenario
@@ -173,6 +185,9 @@ namespace OpenRCT2::Scenario
         GoalArgumentDescriptor* descriptor;
         ArgumentValue value{};
         bool enabled{};
+
+        bool Increment();
+        bool Decrement();
     };
 
     // Modifiable goal container for active scenario
@@ -182,6 +197,7 @@ namespace OpenRCT2::Scenario
         std::vector<ScenarioGoalArgument*> values;
 
         ObjectiveStatus Evaluate(Park::ParkData& park, GameState_t& gameState) const;
+        // TODO: Clean up with generics
         bool GetArgumentEnabled(size_t listIndex) const;
         uint16_t GetArgumentValueNumber(size_t listIndex) const;
         money64 GetArgumentValueMoney(size_t listIndex) const;
@@ -202,16 +218,24 @@ namespace OpenRCT2::Scenario
 
         ObjectiveStatus ScenarioEvaluateObjective(Park::ParkData& park, GameState_t& gameState) const;
 
+        // TODO: Clean up with generics
         void SetArgumentNumber(int32_t goalIndex, int32_t argIndex, uint16_t value);
         void SetArgumentMoney(int32_t goalIndex, int32_t argIndex, money64 value);
         void SetArgumentRating(int32_t goalIndex, int32_t argIndex, RideRating_t value);
         void SetArgumentDistance(int32_t goalIndex, int32_t argIndex, uint16_t value);
         void SetArgumentRideType(int32_t goalIndex, int32_t argIndex, ObjectEntryIndex value);
 
+        ScenarioGoalArgument* GetArgumentByDescriptor(GoalArgumentDescriptor descriptor) const;
+        uint16_t GetArgumentNumberByDescriptor(GoalArgumentDescriptor descriptor) const;
+        money64 GetArgumentMoneyByDescriptor(GoalArgumentDescriptor descriptor) const;
+        RideRating_t GetArgumentRatingByDescriptor(GoalArgumentDescriptor descriptor) const;
+
+        bool IncrementDeadlineYear();
+        bool DecrementDeadlineYear();
+
         void EnableArgument(int32_t goalIndex, int32_t argIndex);
         void DisableArgument(int32_t goalIndex, int32_t argIndex);
         bool IsArgumentEnabled(GoalArgumentDescriptor descriptor);
-        uint16_t GetArgumentNumberByDescriptor(GoalArgumentDescriptor descriptor);
 
         uint8_t GetGoalCount() const;
 
@@ -221,6 +245,8 @@ namespace OpenRCT2::Scenario
     static ScenarioObjective ScenarioObjectiveInitFromPreset(const ScenarioObjectiveDescriptor& preset);
     static ScenarioObjective ScenarioObjectiveInitFromLegacyType(
         const LegacyObjectiveType type, uint8_t arg1, int32_t arg2, uint16_t arg3);
+    static ScenarioObjective ScenarioObjectiveInitFromLegacyType(
+        const LegacyObjectiveType type);
 
     #pragma region GoalArgumentDescriptors
     constexpr GoalArgumentDescriptor kArgumentGuestCount = {
@@ -344,7 +370,7 @@ namespace OpenRCT2::Scenario
         &kArgumentCoasterCompleteExisting,
         &kArgumentCoasterExcitement,
         &kArgumentCoasterLength,
-        &kArgumentRideType,
+        &kArgumentBuildTheBest,
     };
     #pragma endregion
 
@@ -508,6 +534,22 @@ namespace OpenRCT2::Scenario
         .name = STR_OBJECTIVE_MONTHLY_FOOD_INCOME,
         .deadlineYear = kObjectiveYearNoDeadline,
         .goals = { kGoalIncomeShops }
+    };
+
+    constexpr const ScenarioObjectiveDescriptor* kObjectivePresets[] = {
+        // HaveFun used to correspond to LegacyObjectiveType::none
+        &kObjectivePresetHaveFun,
+        &kObjectivePresetGuestsBy,
+        &kObjectivePresetParkValueBy,
+        &kObjectivePresetHaveFun,
+        &kObjectivePresetBuildTheBest,
+        &kObjectivePresetTenRollerCoasters,
+        &kObjectivePresetGuestsAndRating,
+        &kObjectivePresetMonthlyRideIncome,
+        &kObjectivePresetTenRollerCoastersLength,
+        &kObjectivePresetCompleteFiveRollerCoasters,
+        &kObjectivePresetRepayLoanAndParkValue,
+        &kObjectivePresetMonthlyFoodIncome,
     };
     #pragma endregion
 } // namespace OpenRCT2::Scenario

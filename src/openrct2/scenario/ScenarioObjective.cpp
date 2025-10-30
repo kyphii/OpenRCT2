@@ -52,91 +52,81 @@ namespace OpenRCT2::Scenario
         // arg2 = money, excitement
         // arg3 = guests, rideID, coasterLength
 
-        ScenarioObjective objective;
+        ScenarioObjective objective = ScenarioObjectiveInitFromPreset(*kObjectivePresets[static_cast<uint8_t>(type)]);
 
         switch (type)
         {
             case LegacyObjectiveType::guestsBy:
-                objective = ScenarioObjectiveInitFromPreset(kObjectivePresetGuestsBy);
-
                 objective.deadlineYear = arg1;
                 // Guest count
                 objective.SetArgumentNumber(0, 0, arg2);
-                // Park rating
-                objective.SetArgumentNumber(1, 0, kObjectiveParkRatingDefault);
                 break;
             case LegacyObjectiveType::parkValueBy:
-                objective = ScenarioObjectiveInitFromPreset(kObjectivePresetGuestsBy);
-
                 objective.deadlineYear = arg1;
                 // Park Value
                 objective.SetArgumentMoney(0, 0, arg2);
-                // Park rating
-                objective.SetArgumentNumber(1, 0, kObjectiveParkRatingDefault);
                 break;
             case LegacyObjectiveType::buildTheBest:
-                objective = ScenarioObjectiveInitFromPreset(kObjectivePresetBuildTheBest);
-
                 // Ride Type
                 objective.SetArgumentRideType(0, 0, arg3);
                 break;
             case LegacyObjectiveType::tenRollercoasters:
-                objective = ScenarioObjectiveInitFromPreset(kObjectivePresetTenRollerCoasters);
-
-                // Coaster Count
-                objective.SetArgumentNumber(0, 0, 10);
                 // Excitement
                 objective.SetArgumentRating(0, 1, arg2);
                 break;
             case LegacyObjectiveType::guestsAndRating:
-                objective = ScenarioObjectiveInitFromPreset(kObjectivePresetGuestsBy);
-
                 // Guest count
                 objective.SetArgumentNumber(0, 0, arg2);
-                // Park rating
-                objective.SetArgumentNumber(1, 0, kObjectiveParkRatingSustain);
-                // Enable sustain checks
-                objective.EnableArgument(1, 1);
                 break;
             case LegacyObjectiveType::monthlyRideIncome:
-                objective = ScenarioObjectiveInitFromPreset(kObjectivePresetMonthlyRideIncome);
-
                 // Income
                 objective.SetArgumentMoney(0, 0, arg2);
                 break;
             case LegacyObjectiveType::tenRollercoastersLength:
-                objective = ScenarioObjectiveInitFromPreset(kObjectivePresetTenRollerCoastersLength);
-
-                // Coaster Count
-                objective.SetArgumentNumber(0, 0, 10);
                 // Excitement
                 objective.SetArgumentRating(0, 1, arg2);
-                // Enable length requirement
-                objective.EnableArgument(0, 2);
+                // Length
                 objective.SetArgumentNumber(0, 2, arg3);
                 break;
             case LegacyObjectiveType::finishFiveRollercoasters:
-                objective = ScenarioObjectiveInitFromPreset(kObjectivePresetCompleteFiveRollerCoasters);
-
-                // Coaster Count
-                objective.SetArgumentNumber(0, 0, 5);
                 // Excitement
                 objective.SetArgumentRating(0, 1, arg2);
                 break;
             case LegacyObjectiveType::repayLoanAndParkValue:
-                objective = ScenarioObjectiveInitFromPreset(kObjectivePresetRepayLoanAndParkValue);
-
                 // Park Value
                 objective.SetArgumentMoney(0, 0, arg2);
                 break;
             case LegacyObjectiveType::monthlyFoodIncome:
-                objective = ScenarioObjectiveInitFromPreset(kObjectivePresetMonthlyFoodIncome);
-
                 // Income
                 objective.SetArgumentMoney(0, 0, arg2);
                 break;
             default:
                 objective = ScenarioObjectiveInitFromPreset(kObjectivePresetHaveFun);
+        }
+        return objective;
+    }
+
+    static ScenarioObjective ScenarioObjectiveInitFromLegacyType(const LegacyObjectiveType type)
+    {
+        ScenarioObjective objective = ScenarioObjectiveInitFromPreset(*kObjectivePresets[static_cast<uint8_t>(type)]);
+        switch (type)
+        {
+            case LegacyObjectiveType::guestsAndRating:
+                // Park rating
+                objective.SetArgumentNumber(1, 0, kObjectiveParkRatingSustain);
+                // Enable sustain checks
+                objective.EnableArgument(1, 1);
+                break;
+            case LegacyObjectiveType::tenRollercoastersLength:
+                // Enable length requirement
+                objective.EnableArgument(0, 2);
+                break;
+            case LegacyObjectiveType::finishFiveRollercoasters:
+                // Coaster Count
+                objective.SetArgumentNumber(0, 0, 5);
+                // Enable finish prebuilts
+                objective.EnableArgument(0, 3);
+                break;
         }
         return objective;
     }
@@ -205,7 +195,63 @@ namespace OpenRCT2::Scenario
         return false;
     }
 
-    uint16_t ScenarioObjective::GetArgumentNumberByDescriptor(GoalArgumentDescriptor descriptor)
+    bool ScenarioObjective::IncrementDeadlineYear()
+    {
+        uint8_t expectedResult = this->deadlineYear + kObjectiveYearIncrement;
+        this->deadlineYear = std::min(expectedResult, kObjectiveYearMax);
+        return this->deadlineYear == expectedResult;
+    }
+
+    bool ScenarioObjective::DecrementDeadlineYear()
+    {
+        uint8_t expectedResult = this->deadlineYear - kObjectiveYearIncrement;
+        this->deadlineYear = std::max(expectedResult, kObjectiveYearMin);
+        return this->deadlineYear == expectedResult;
+    }
+
+    bool ScenarioGoalArgument::Increment()
+    {
+        switch (this->descriptor->type)
+        {
+            case GoalArgumentType::number:
+            case GoalArgumentType::distance:
+                uint16_t expNumber = this->value.number + this->descriptor->valueIncrement.number;
+                this->value.number = std::min(expNumber, this->descriptor->maximumValue.number);
+                return this->value.number == expNumber;
+            case GoalArgumentType::money:
+                money64 expMoney = this->value.money + this->descriptor->valueIncrement.money;
+                this->value.money = std::min(expMoney, this->descriptor->maximumValue.money);
+                return this->value.money == expMoney;
+            case GoalArgumentType::rating:
+                RideRating_t expRating = this->value.rating + this->descriptor->valueIncrement.rating;
+                this->value.rating = std::min(expRating, this->descriptor->maximumValue.rating);
+                return this->value.rating == expRating;
+        }
+        return false;
+    }
+
+    bool ScenarioGoalArgument::Decrement()
+    {
+        switch (this->descriptor->type)
+        {
+            case GoalArgumentType::number:
+            case GoalArgumentType::distance:
+                uint16_t expNumber = this->value.number - this->descriptor->valueIncrement.number;
+                this->value.number = std::max(expNumber, this->descriptor->minimumValue.number);
+                return this->value.number == expNumber;
+            case GoalArgumentType::money:
+                money64 expMoney = this->value.money - this->descriptor->valueIncrement.money;
+                this->value.money = std::max(expMoney, this->descriptor->minimumValue.money);
+                return this->value.money == expMoney;
+            case GoalArgumentType::rating:
+                RideRating_t expRating = this->value.rating - this->descriptor->valueIncrement.rating;
+                this->value.rating = std::max(expRating, this->descriptor->minimumValue.rating);
+                return this->value.rating == expRating;
+        }
+        return false;
+    }
+
+    ScenarioGoalArgument* ScenarioObjective::GetArgumentByDescriptor(GoalArgumentDescriptor descriptor) const
     {
         for (auto& goal : this->goals)
         {
@@ -213,11 +259,29 @@ namespace OpenRCT2::Scenario
             {
                 if (arg->descriptor == &descriptor && arg->enabled)
                 {
-                    return arg->value.number;
+                    return arg;
                 }
             }
         }
-        return 0;
+        return nullptr;
+    }
+
+    uint16_t ScenarioObjective::GetArgumentNumberByDescriptor(GoalArgumentDescriptor descriptor) const
+    {
+        auto* arg = GetArgumentByDescriptor(descriptor);
+        return (arg != nullptr) ? arg->value.number : 0;
+    }
+
+    money64 ScenarioObjective::GetArgumentMoneyByDescriptor(GoalArgumentDescriptor descriptor) const
+    {
+        auto* arg = GetArgumentByDescriptor(descriptor);
+        return (arg != nullptr) ? arg->value.money : 0;
+    }
+
+    RideRating_t ScenarioObjective::GetArgumentRatingByDescriptor(GoalArgumentDescriptor descriptor) const
+    {
+        auto* arg = GetArgumentByDescriptor(descriptor);
+        return (arg != nullptr) ? arg->value.rating : 0;
     }
 
     uint8_t ScenarioObjective::GetGoalCount() const
@@ -254,17 +318,15 @@ namespace OpenRCT2::Scenario
 
     ObjectiveStatus ScenarioObjective::ScenarioEvaluateObjective(Park::ParkData& park, GameState_t& gameState) const
     {
+        // Quit out if scenario was already completed or failed
         if (gameState.scenarioCompletedCompanyValue != kMoney64Undefined)
         {
             return ObjectiveStatus::Undecided;
         }
 
-        ObjectiveStatus status = ObjectiveStatus::Success;
-
         bool hasDeadline = this->deadlineYear > 0;
         bool atDeadline = hasDeadline && (GetDate().GetMonthsElapsed() >= this->deadlineYear * MONTH_COUNT);
-        bool earlyCompletionEnabled = AllowEarlyCompletion();
-        bool eligibleForCompletion = earlyCompletionEnabled || atDeadline;
+        bool eligibleForCompletion = AllowEarlyCompletion() || atDeadline || !hasDeadline;
 
         for (auto& goal : this->goals)
         {
