@@ -57,7 +57,7 @@ struct ScenarioIndexEntry
     uint16_t ScenarioId;
 
     // Objective
-    OpenRCT2::Scenario::ScenarioObjective* Objective;
+    OpenRCT2::Scenario::ScenarioObjective Objective;
 
     ScenarioHighscoreEntry* Highscore = nullptr;
 

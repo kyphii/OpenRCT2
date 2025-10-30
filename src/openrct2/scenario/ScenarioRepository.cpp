@@ -172,30 +172,23 @@ protected:
         ds << item.SourceGame;
         ds << item.SourceIndex;
         ds << item.ScenarioId;
-        if (ds.IsLoading())
+
+        uint8_t legacyId = OpenRCT2::Scenario::kObjectiveFormatNewId;
+        ds << legacyId;
+        if (ds.IsLoading() && legacyId <= OpenRCT2::Scenario::kObjectiveFormatNewId)
         {
-            uint8_t legacyId = 0;
-            uint8_t objectiveArg1 = 0;
-            uint8_t objectiveArg2 = 0;
-            uint8_t objectiveArg3 = 0;
-            ds << legacyId;
+            uint16_t objectiveArg1 = 0;
+            uint16_t objectiveArg2 = 0;
+            uint16_t objectiveArg3 = 0;
             ds << objectiveArg1;
             ds << objectiveArg2;
             ds << objectiveArg3;
-            if (legacyId <= OpenRCT2::Scenario::kObjectiveFormatNewId)
-            {
-                const_cast<ScenarioIndexEntry&>(item).Objective = OpenRCT2::Scenario::ScenarioObjectiveInitFromLegacyType(
-                    static_cast<OpenRCT2::Scenario::LegacyObjectiveType>(legacyId), objectiveArg1, objectiveArg2, objectiveArg3);
-            }
-            else
-            {
-                // TODO: deserialize new objective format
-            }
-            
+            const_cast<ScenarioIndexEntry&>(item).Objective = OpenRCT2::Scenario::ScenarioObjectiveInitFromLegacyType(
+                static_cast<OpenRCT2::Scenario::LegacyObjectiveType>(legacyId), objectiveArg1, objectiveArg2, objectiveArg3);
         }
         else
         {
-            // TODO: serialize new objective format
+            ds << item.Objective;
         }
 
         ds << item.InternalName;

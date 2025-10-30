@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../core/MemoryStream.h"
 #include "../core/Money.hpp"
 #include "../localisation/StringIds.h"
 #include "../object/ObjectTypes.h"
@@ -71,10 +72,10 @@ namespace OpenRCT2::Scenario
     static constexpr uint8_t kObjectiveYearMax        = 25;
     static constexpr uint8_t kObjectiveYearIncrement  = 1;
 
-    static constexpr size_t kMaxObjectiveGoals = 5;
-    static constexpr size_t kMaxGoalArguments = 5;
+    static constexpr size_t kMaxObjectiveGoals = 3;
+    static constexpr size_t kMaxGoalArguments = 4;
 
-    // Used by serialization to distinguish legacy objective ids from new format
+    // Used in Scenario Repository serialization to distinguish legacy objective ids from new format
     static constexpr uint8_t kObjectiveFormatNewId = 255;
 
     struct ScenarioGoal;
@@ -150,6 +151,8 @@ namespace OpenRCT2::Scenario
         // Function by which the objective is evaluated for completion/failure
         GoalEvaluationFunc evaluationFunction{};
         const GoalArgumentDescriptor* arguments[kMaxGoalArguments];
+        // Must ALWAYS match the number of arguments
+        uint8_t argCount;
 
         bool IsValidForSettings(bool useMoney, bool canAskMoneyForRides) const
         {
@@ -167,7 +170,7 @@ namespace OpenRCT2::Scenario
     // Modifiable argument container for active scenario
     struct ScenarioGoalArgument
     {
-        GoalArgumentDescriptor descriptor;
+        GoalArgumentDescriptor* descriptor;
         ArgumentValue value{};
         bool enabled{};
     };
@@ -175,7 +178,7 @@ namespace OpenRCT2::Scenario
     // Modifiable goal container for active scenario
     struct ScenarioGoal
     {
-        GoalDescriptor descriptor;
+        GoalDescriptor* descriptor;
         std::vector<ScenarioGoalArgument*> values;
 
         ObjectiveStatus Evaluate(Park::ParkData& park, GameState_t& gameState) const;
@@ -194,6 +197,8 @@ namespace OpenRCT2::Scenario
         uint8_t deadlineYear;
         std::vector<ScenarioGoal> goals;
         StringId format;
+        // Whether the objective description text window should open on loading a save.
+        bool displayOnLoad;
 
         ObjectiveStatus ScenarioEvaluateObjective(Park::ParkData& park, GameState_t& gameState) const;
 
@@ -208,12 +213,14 @@ namespace OpenRCT2::Scenario
         bool IsArgumentEnabled(GoalArgumentDescriptor descriptor);
         uint16_t GetArgumentNumberByDescriptor(GoalArgumentDescriptor descriptor);
 
-        bool AllowsClosingPark();
+        uint8_t GetGoalCount() const;
+
+        bool AllowsClosingPark() const;
     };
 
-    static ScenarioObjective* ScenarioObjectiveInitFromPreset(const ScenarioObjectiveDescriptor& preset);
-    static ScenarioObjective* ScenarioObjectiveInitFromLegacyType(
-        const LegacyObjectiveType type, uint8_t arg1, uint8_t arg2, uint8_t arg3);
+    static ScenarioObjective ScenarioObjectiveInitFromPreset(const ScenarioObjectiveDescriptor& preset);
+    static ScenarioObjective ScenarioObjectiveInitFromLegacyType(
+        const LegacyObjectiveType type, uint8_t arg1, int32_t arg2, uint16_t arg3);
 
     #pragma region GoalArgumentDescriptors
     constexpr GoalArgumentDescriptor kArgumentGuestCount = {
@@ -318,11 +325,26 @@ namespace OpenRCT2::Scenario
         .valueIncrement = kObjectiveLengthIncrement,
     };
 
-    constexpr GoalArgumentDescriptor kArgumentRideType = {
+    constexpr GoalArgumentDescriptor kArgumentBuildTheBest = {
         .index = 10,
         .isOptional = false,
         .allowClosingPark = true,
         .type = GoalArgumentType::rideType,
+    };
+
+    // For proper serialization, index value and list position must match
+    constexpr const GoalArgumentDescriptor* kArgumentList[] = {
+        &kArgumentGuestCount,
+        &kArgumentParkRating,
+        &kArgumentSustainParkRating,
+        &kArgumentParkValue,
+        &kArgumentIncomeRides,
+        &kArgumentIncomeShops,
+        &kArgumentCoasterCount,
+        &kArgumentCoasterCompleteExisting,
+        &kArgumentCoasterExcitement,
+        &kArgumentCoasterLength,
+        &kArgumentRideType,
     };
     #pragma endregion
 
@@ -342,6 +364,7 @@ namespace OpenRCT2::Scenario
         .requiresRideTickets = false,
         .evaluationFunction = EvaluateGuests,
         .arguments = { &kArgumentGuestCount },
+        .argCount = 1,
     };
 
     constexpr GoalDescriptor kGoalParkRating = {
@@ -350,6 +373,7 @@ namespace OpenRCT2::Scenario
         .requiresRideTickets = false,
         .evaluationFunction = EvaluateParkRating,
         .arguments = { &kArgumentParkRating, &kArgumentSustainParkRating },
+        .argCount = 2,
     };
 
     constexpr GoalDescriptor kGoalParkValue = {
@@ -358,6 +382,7 @@ namespace OpenRCT2::Scenario
         .requiresRideTickets = false,
         .evaluationFunction = EvaluateParkValue,
         .arguments = { &kArgumentParkValue },
+        .argCount = 1,
     };
 
     constexpr GoalDescriptor kGoalRepayLoan = {
@@ -366,6 +391,7 @@ namespace OpenRCT2::Scenario
         .requiresRideTickets = false,
         .evaluationFunction = EvaluateLoan,
         .arguments = {},
+        .argCount = 0,
     };
 
     constexpr GoalDescriptor kGoalIncomeRides = {
@@ -374,6 +400,7 @@ namespace OpenRCT2::Scenario
         .requiresRideTickets = true,
         .evaluationFunction = EvaluateIncomeRides,
         .arguments = { &kArgumentIncomeRides },
+        .argCount = 1,
     };
 
     constexpr GoalDescriptor kGoalIncomeShops = {
@@ -382,6 +409,7 @@ namespace OpenRCT2::Scenario
         .requiresRideTickets = false,
         .evaluationFunction = EvaluateIncomeShops,
         .arguments = { &kArgumentIncomeShops },
+        .argCount = 1,
     };
 
     constexpr GoalDescriptor kGoalCoasters = {
@@ -391,6 +419,7 @@ namespace OpenRCT2::Scenario
         .evaluationFunction = EvaluateRollerCoasters,
         .arguments = { &kArgumentCoasterCount, &kArgumentCoasterExcitement, &kArgumentCoasterLength,
                        &kArgumentCoasterCompleteExisting },
+        .argCount = 4,
     };
 
     constexpr GoalDescriptor kGoalBuildTheBest = {
@@ -398,7 +427,19 @@ namespace OpenRCT2::Scenario
         .requiresMoney = false,
         .requiresRideTickets = false,
         .evaluationFunction = EvaluateEmpty,
-        .arguments = { &kArgumentRideType },
+        .arguments = { &kArgumentBuildTheBest },
+        .argCount = 1,
+    };
+
+    constexpr const GoalDescriptor* kGoalList[] = {
+        &kGoalGuests,
+        &kGoalParkRating,
+        &kGoalParkValue,
+        &kGoalRepayLoan,
+        &kGoalIncomeRides,
+        &kGoalIncomeShops,
+        &kGoalCoasters,
+        &kGoalBuildTheBest,
     };
     #pragma endregion
 

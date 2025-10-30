@@ -220,7 +220,7 @@ namespace OpenRCT2::GameActions
                 ride->price[1] = GetShopItemDescriptor(rideEntry->shop_item[1]).DefaultPrice;
             }
 
-            if (gameState.scenarioOptions.objective.Type == Scenario::ObjectiveType::buildTheBest)
+            if (gameState.scenarioOptions.objective.IsArgumentEnabled(Scenario::kArgumentBuildTheBest))
             {
                 ride->price[0] = 0;
             }

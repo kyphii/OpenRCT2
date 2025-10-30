@@ -405,7 +405,7 @@ namespace OpenRCT2::Ui::Windows
                                               .Currency = scenario->ObjectiveArg2 };
 
             ft = Formatter();
-            ft.Add<StringId>(scenario->Objective->format);
+            ft.Add<StringId>(scenario->Objective.format);
             formatObjective(ft, objective);
             screenPos.y += DrawTextWrapped(rt, screenPos, previewPaneWidth, STR_OBJECTIVE, ft) + 5;
 
