@@ -11,6 +11,7 @@
 
 #include <cstdint>
 #include <openrct2/localisation/StringIdType.h>
+#include <openrct2/scenario//ScenarioObjective.h>
 
 namespace OpenRCT2
 {

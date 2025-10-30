@@ -137,6 +137,11 @@ namespace OpenRCT2::Scenario
         ArgumentValue minimumValue;
         ArgumentValue maximumValue;
         ArgumentValue valueIncrement;
+
+        bool operator==(const GoalArgumentDescriptor& other) const
+        {
+            return this->index == other.index;
+        }
     };
 
     using GoalEvaluationFunc = ObjectiveStatus (*)(Park::ParkData& park, GameState_t& gameState, struct ScenarioGoal goal);
@@ -165,13 +170,13 @@ namespace OpenRCT2::Scenario
         StringId name{};
         StringId dropdownDesc{};
         uint8_t deadlineYear{};
-        const GoalDescriptor goals[kMaxObjectiveGoals];
+        const GoalDescriptor* goals[kMaxObjectiveGoals];
 
         bool IsValidForSettings(bool useMoney, bool canAskMoneyForRides) const
         {
-            for (auto goal : goals)
+            for (const auto& goal : goals)
             {
-                if (!goal.IsValidForSettings(useMoney, canAskMoneyForRides)) {
+                if (!goal->IsValidForSettings(useMoney, canAskMoneyForRides)) {
                     return false;
                 }
             }
@@ -211,7 +216,7 @@ namespace OpenRCT2::Scenario
     public:
         // Time limit for the objective, in years. 0 = no time limit.
         uint8_t deadlineYear;
-        std::vector<ScenarioGoal> goals;
+        std::vector<ScenarioGoal*> goals;
         StringId format;
         // Whether the objective description text window should open on loading a save.
         bool displayOnLoad;
@@ -225,10 +230,10 @@ namespace OpenRCT2::Scenario
         void SetArgumentDistance(int32_t goalIndex, int32_t argIndex, uint16_t value);
         void SetArgumentRideType(int32_t goalIndex, int32_t argIndex, ObjectEntryIndex value);
 
-        ScenarioGoalArgument* GetArgumentByDescriptor(GoalArgumentDescriptor descriptor) const;
-        uint16_t GetArgumentNumberByDescriptor(GoalArgumentDescriptor descriptor) const;
-        money64 GetArgumentMoneyByDescriptor(GoalArgumentDescriptor descriptor) const;
-        RideRating_t GetArgumentRatingByDescriptor(GoalArgumentDescriptor descriptor) const;
+        ScenarioGoalArgument* GetArgumentByDescriptor(const GoalArgumentDescriptor* descriptor) const;
+        uint16_t GetArgumentNumberByDescriptor(const GoalArgumentDescriptor* descriptor) const;
+        money64 GetArgumentMoneyByDescriptor(const GoalArgumentDescriptor* descriptor) const;
+        RideRating_t GetArgumentRatingByDescriptor(const GoalArgumentDescriptor* descriptor) const;
 
         bool IncrementDeadlineYear();
         bool DecrementDeadlineYear();
@@ -242,22 +247,42 @@ namespace OpenRCT2::Scenario
         bool AllowsClosingPark() const;
     };
 
-    static ScenarioObjective ScenarioObjectiveInitFromPreset(const ScenarioObjectiveDescriptor& preset);
-    static ScenarioObjective ScenarioObjectiveInitFromLegacyType(
-        const LegacyObjectiveType type, uint8_t arg1, int32_t arg2, uint16_t arg3);
-    static ScenarioObjective ScenarioObjectiveInitFromLegacyType(
+    ScenarioObjective ScenarioObjectiveInitFromPreset(const ScenarioObjectiveDescriptor& preset);
+    ScenarioObjective ScenarioObjectiveInitFromLegacyType(
+        const LegacyObjectiveType type, uint8_t arg1, int64_t arg2, uint16_t arg3);
+    ScenarioObjective ScenarioObjectiveInitFromLegacyType(
         const LegacyObjectiveType type);
 
     #pragma region GoalArgumentDescriptors
+    constexpr ArgumentValue ArgNumber(uint16_t val) {
+        return ArgumentValue{
+            .number = val,
+        };
+    }
+
+    constexpr ArgumentValue ArgMoney(money64 val)
+    {
+        return ArgumentValue{
+            .money = val,
+        };
+    }
+
+    constexpr ArgumentValue ArgRating(RideRating_t val)
+    {
+        return ArgumentValue{
+            .rating = val,
+        };
+    }
+
     constexpr GoalArgumentDescriptor kArgumentGuestCount = {
         .index = 0,
         .isOptional = false,
         .allowClosingPark = true,
         .type = GoalArgumentType::number,
-        .defaultValue =   kObjectiveGuestsDefault,
-        .minimumValue =   kObjectiveGuestsMin,
-        .maximumValue =   kObjectiveGuestsMax,
-        .valueIncrement = kObjectiveGuestsIncrement, 
+        .defaultValue =   ArgNumber(kObjectiveGuestsDefault),
+        .minimumValue =   ArgNumber(kObjectiveGuestsMin),
+        .maximumValue =   ArgNumber(kObjectiveGuestsMax),
+        .valueIncrement = ArgNumber(kObjectiveGuestsIncrement), 
     };
 
     constexpr GoalArgumentDescriptor kArgumentParkRating = {
@@ -265,10 +290,10 @@ namespace OpenRCT2::Scenario
         .isOptional = false,
         .allowClosingPark = true,
         .type = GoalArgumentType::number,
-        .defaultValue =   kObjectiveParkRatingDefault,
-        .minimumValue =   kObjectiveParkRatingMin,
-        .maximumValue =   kObjectiveParkRatingMax,
-        .valueIncrement = kObjectiveParkRatingIncrement,
+        .defaultValue =   ArgMoney(kObjectiveParkRatingDefault),
+        .minimumValue =   ArgMoney(kObjectiveParkRatingMin),
+        .maximumValue =   ArgMoney(kObjectiveParkRatingMax),
+        .valueIncrement = ArgMoney(kObjectiveParkRatingIncrement),
     };
 
     constexpr GoalArgumentDescriptor kArgumentSustainParkRating = {
@@ -283,10 +308,10 @@ namespace OpenRCT2::Scenario
         .isOptional = false,
         .allowClosingPark = true,
         .type = GoalArgumentType::money,
-        .defaultValue =   kObjectiveParkValueDefault,
-        .minimumValue =   kObjectiveParkValueMin,
-        .maximumValue =   kObjectiveParkValueMax,
-        .valueIncrement = kObjectiveParkValueIncrement,
+        .defaultValue =   ArgMoney(kObjectiveParkValueDefault),
+        .minimumValue =   ArgMoney(kObjectiveParkValueMin),
+        .maximumValue =   ArgMoney(kObjectiveParkValueMax),
+        .valueIncrement = ArgMoney(kObjectiveParkValueIncrement),
     };
 
     constexpr GoalArgumentDescriptor kArgumentIncomeRides = {
@@ -294,10 +319,10 @@ namespace OpenRCT2::Scenario
         .isOptional = false,
         .allowClosingPark = true,
         .type = GoalArgumentType::money,
-        .defaultValue =   kObjectiveIncomeRidesDefault,
-        .minimumValue =   kObjectiveIncomeMin,
-        .maximumValue =   kObjectiveIncomeMax,
-        .valueIncrement = kObjectiveIncomeIncrement,
+        .defaultValue =   ArgMoney(kObjectiveIncomeRidesDefault),
+        .minimumValue =   ArgMoney(kObjectiveIncomeMin),
+        .maximumValue =   ArgMoney(kObjectiveIncomeMax),
+        .valueIncrement = ArgMoney(kObjectiveIncomeIncrement),
     };
 
     constexpr GoalArgumentDescriptor kArgumentIncomeShops = {
@@ -305,10 +330,10 @@ namespace OpenRCT2::Scenario
         .isOptional = false,
         .allowClosingPark = true,
         .type = GoalArgumentType::money,
-        .defaultValue =   kObjectiveIncomeShopsDefault,
-        .minimumValue =   kObjectiveIncomeMin,
-        .maximumValue =   kObjectiveIncomeMax,
-        .valueIncrement = kObjectiveIncomeIncrement,
+        .defaultValue =   ArgMoney(kObjectiveIncomeShopsDefault),
+        .minimumValue =   ArgMoney(kObjectiveIncomeMin),
+        .maximumValue =   ArgMoney(kObjectiveIncomeMax),
+        .valueIncrement = ArgMoney(kObjectiveIncomeIncrement),
     };
 
     constexpr GoalArgumentDescriptor kArgumentCoasterCount = {
@@ -316,10 +341,10 @@ namespace OpenRCT2::Scenario
         .isOptional = false,
         .allowClosingPark = true,
         .type = GoalArgumentType::number,
-        .defaultValue =   kObjectiveCoastersDefault,
-        .minimumValue =   kObjectiveCoastersMin,
-        .maximumValue =   kObjectiveCoastersMax,
-        .valueIncrement = kObjectiveCoastersIncrement,
+        .defaultValue =   ArgNumber(kObjectiveCoastersDefault),
+        .minimumValue =   ArgNumber(kObjectiveCoastersMin),
+        .maximumValue =   ArgNumber(kObjectiveCoastersMax),
+        .valueIncrement = ArgNumber(kObjectiveCoastersIncrement),
     };
 
     constexpr GoalArgumentDescriptor kArgumentCoasterCompleteExisting = {
@@ -334,10 +359,10 @@ namespace OpenRCT2::Scenario
         .isOptional = false,
         .allowClosingPark = true,
         .type = GoalArgumentType::rating,
-        .defaultValue =   kObjectiveExcitementDefault,
-        .minimumValue =   kObjectiveExcitementMin,
-        .maximumValue =   kObjectiveExcitementMax,
-        .valueIncrement = kObjectiveExcitementIncrement,
+        .defaultValue =   ArgRating(kObjectiveExcitementDefault),
+        .minimumValue =   ArgRating(kObjectiveExcitementMin),
+        .maximumValue =   ArgRating(kObjectiveExcitementMax),
+        .valueIncrement = ArgRating(kObjectiveExcitementIncrement),
     };
 
     constexpr GoalArgumentDescriptor kArgumentCoasterLength = {
@@ -345,10 +370,10 @@ namespace OpenRCT2::Scenario
         .isOptional = true,
         .allowClosingPark = true,
         .type = GoalArgumentType::distance,
-        .defaultValue =   kObjectiveLengthDefault,
-        .minimumValue =   kObjectiveLengthMin,
-        .maximumValue =   kObjectiveLengthMax,
-        .valueIncrement = kObjectiveLengthIncrement,
+        .defaultValue =   ArgNumber(kObjectiveLengthDefault),
+        .minimumValue =   ArgNumber(kObjectiveLengthMin),
+        .maximumValue =   ArgNumber(kObjectiveLengthMax),
+        .valueIncrement = ArgNumber(kObjectiveLengthIncrement),
     };
 
     constexpr GoalArgumentDescriptor kArgumentBuildTheBest = {
@@ -375,14 +400,14 @@ namespace OpenRCT2::Scenario
     #pragma endregion
 
     #pragma region GoalDescriptors
-    static ObjectiveStatus EvaluateEmpty(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal);
-    static ObjectiveStatus EvaluateGuests(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal);
-    static ObjectiveStatus EvaluateParkRating(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal);
-    static ObjectiveStatus EvaluateParkValue(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal);
-    static ObjectiveStatus EvaluateLoan(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal);
-    static ObjectiveStatus EvaluateIncomeRides(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal);
-    static ObjectiveStatus EvaluateIncomeShops(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal);
-    static ObjectiveStatus EvaluateRollerCoasters(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal);
+    ObjectiveStatus EvaluateEmpty(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal);
+    ObjectiveStatus EvaluateGuests(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal);
+    ObjectiveStatus EvaluateParkRating(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal);
+    ObjectiveStatus EvaluateParkValue(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal);
+    ObjectiveStatus EvaluateLoan(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal);
+    ObjectiveStatus EvaluateIncomeRides(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal);
+    ObjectiveStatus EvaluateIncomeShops(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal);
+    ObjectiveStatus EvaluateRollerCoasters(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal);
 
     constexpr GoalDescriptor kGoalGuests = {
         .index = 0,
@@ -473,13 +498,13 @@ namespace OpenRCT2::Scenario
     constexpr ScenarioObjectiveDescriptor kObjectivePresetGuestsBy = {
         .name = STR_OBJECTIVE_GUESTS_BY,
         .deadlineYear = kObjectiveYearDefault,
-        .goals = { kGoalGuests, kGoalParkRating }
+        .goals = { &kGoalGuests, &kGoalParkRating }
     };
 
     constexpr ScenarioObjectiveDescriptor kObjectivePresetParkValueBy = {
         .name = STR_OBJECTIVE_PARK_VALUE_BY,
         .deadlineYear = kObjectiveYearDefault,
-        .goals = { kGoalParkValue, kGoalParkRating }
+        .goals = { &kGoalParkValue, &kGoalParkRating }
     };
 
     constexpr ScenarioObjectiveDescriptor kObjectivePresetHaveFun = {
@@ -491,49 +516,49 @@ namespace OpenRCT2::Scenario
     constexpr ScenarioObjectiveDescriptor kObjectivePresetBuildTheBest = {
         .name = STR_OBJECTIVE_BUILD_THE_BEST,
         .deadlineYear = kObjectiveYearNoDeadline,
-        .goals = { kGoalBuildTheBest }
+        .goals = { &kGoalBuildTheBest }
     };
 
     constexpr ScenarioObjectiveDescriptor kObjectivePresetTenRollerCoasters = {
         .name = STR_OBJECTIVE_10_ROLLERCOASTERS,
         .deadlineYear = kObjectiveYearNoDeadline,
-        .goals = { kGoalCoasters }
+        .goals = { &kGoalCoasters }
     };
 
     constexpr ScenarioObjectiveDescriptor kObjectivePresetGuestsAndRating = {
         .name = STR_OBJECTIVE_GUESTS_AND_RATING,
         .deadlineYear = kObjectiveYearNoDeadline,
-        .goals = { kGoalGuests, kGoalParkRating }
+        .goals = { &kGoalGuests, &kGoalParkRating }
     };
 
     constexpr ScenarioObjectiveDescriptor kObjectivePresetMonthlyRideIncome = {
         .name = STR_OBJECTIVE_MONTHLY_RIDE_INCOME,
         .deadlineYear = kObjectiveYearNoDeadline,
-        .goals = { kGoalIncomeRides }
+        .goals = { &kGoalIncomeRides }
     };
 
     constexpr ScenarioObjectiveDescriptor kObjectivePresetTenRollerCoastersLength = {
         .name = STR_OBJECTIVE_10_ROLLERCOASTERS_LENGTH,
         .deadlineYear = kObjectiveYearNoDeadline,
-        .goals = { kGoalCoasters }
+        .goals = { &kGoalCoasters }
     };
 
     constexpr ScenarioObjectiveDescriptor kObjectivePresetCompleteFiveRollerCoasters = {
         .name = STR_OBJECTIVE_FINISH_5_ROLLERCOASTERS,
         .deadlineYear = kObjectiveYearNoDeadline,
-        .goals = { kGoalCoasters }
+        .goals = { &kGoalCoasters }
     };
 
     constexpr ScenarioObjectiveDescriptor kObjectivePresetRepayLoanAndParkValue = {
         .name = STR_OBJECTIVE_REPLAY_LOAN_AND_PARK_VALUE,
         .deadlineYear = kObjectiveYearNoDeadline,
-        .goals = { kGoalParkValue, kGoalRepayLoan }
+        .goals = { &kGoalParkValue, &kGoalRepayLoan }
     };
 
     constexpr ScenarioObjectiveDescriptor kObjectivePresetMonthlyFoodIncome = {
         .name = STR_OBJECTIVE_MONTHLY_FOOD_INCOME,
         .deadlineYear = kObjectiveYearNoDeadline,
-        .goals = { kGoalIncomeShops }
+        .goals = { &kGoalIncomeShops }
     };
 
     constexpr const ScenarioObjectiveDescriptor* kObjectivePresets[] = {

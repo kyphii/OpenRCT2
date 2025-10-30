@@ -177,8 +177,8 @@ protected:
         ds << legacyId;
         if (ds.IsLoading() && legacyId <= OpenRCT2::Scenario::kObjectiveFormatNewId)
         {
-            uint16_t objectiveArg1 = 0;
-            uint16_t objectiveArg2 = 0;
+            uint8_t objectiveArg1 = 0;
+            int64_t objectiveArg2 = 0;
             uint16_t objectiveArg3 = 0;
             ds << objectiveArg1;
             ds << objectiveArg2;

@@ -18,47 +18,51 @@
 
 namespace OpenRCT2::Ui
 {
+    static StringId GetRideTypeString(const Scenario::ScenarioObjective& objective)
+    {
+        auto rideTypeId = objective.GetArgumentByDescriptor(&Scenario::kArgumentBuildTheBest)->value.rideType;
+        if (rideTypeId != kRideTypeNull && rideTypeId < RIDE_TYPE_COUNT)
+        {
+            return GetRideTypeDescriptor(rideTypeId).Naming.Name;
+        }
+        return kStringIdNone;
+    }
+
     void formatObjective(Formatter& ft, const Scenario::ScenarioObjective& objective)
     {
         switch (objective.format)
         {
             case STR_OBJECTIVE_GUESTS_BY:
-                ft.Add<int32_t>(objective.GetArgumentNumberByDescriptor(Scenario::kArgumentGuestCount));
+                ft.Add<int32_t>(objective.GetArgumentNumberByDescriptor(&Scenario::kArgumentGuestCount));
                 ft.Add<int16_t>(DateGetTotalMonths(MONTH_OCTOBER, objective.deadlineYear));
                 break;
             case STR_OBJECTIVE_PARK_VALUE_BY:
-                ft.Add<money64>(objective.GetArgumentMoneyByDescriptor(Scenario::kArgumentParkValue));
+                ft.Add<money64>(objective.GetArgumentMoneyByDescriptor(&Scenario::kArgumentParkValue));
                 ft.Add<int16_t>(DateGetTotalMonths(MONTH_OCTOBER, objective.deadlineYear));
                 break;
             case STR_OBJECTIVE_HAVE_FUN:
                 break;
             case STR_OBJECTIVE_BUILD_THE_BEST:
-                StringId rideTypeString = kStringIdNone;
-                auto rideTypeId = objective.GetArgumentByDescriptor(Scenario::kArgumentBuildTheBest)->value.rideType;
-                if (rideTypeId != kRideTypeNull && rideTypeId < RIDE_TYPE_COUNT)
-                {
-                    rideTypeString = GetRideTypeDescriptor(rideTypeId).Naming.Name;
-                }
-                ft.Add<StringId>(rideTypeString);
+                ft.Add<StringId>(GetRideTypeString(objective));
                 break;
             case STR_OBJECTIVE_GUESTS_AND_RATING:
-                ft.Add<int32_t>(objective.GetArgumentNumberByDescriptor(Scenario::kArgumentGuestCount));
+                ft.Add<int32_t>(objective.GetArgumentNumberByDescriptor(&Scenario::kArgumentGuestCount));
                 break;
             case STR_OBJECTIVE_MONTHLY_RIDE_INCOME:
-                ft.Add<money64>(objective.GetArgumentMoneyByDescriptor(Scenario::kArgumentIncomeRides));
+                ft.Add<money64>(objective.GetArgumentMoneyByDescriptor(&Scenario::kArgumentIncomeRides));
                 break;
             case STR_OBJECTIVE_10_ROLLERCOASTERS_LENGTH:
-                ft.Add<int16_t>(objective.GetArgumentNumberByDescriptor(Scenario::kArgumentCoasterLength));
+                ft.Add<int16_t>(objective.GetArgumentNumberByDescriptor(&Scenario::kArgumentCoasterLength));
                 break;
             case STR_OBJECTIVE_10_ROLLERCOASTERS:
             case STR_OBJECTIVE_FINISH_5_ROLLERCOASTERS:
-                ft.Add<RideRating_t>(objective.GetArgumentRatingByDescriptor(Scenario::kArgumentCoasterExcitement));
+                ft.Add<RideRating_t>(objective.GetArgumentRatingByDescriptor(&Scenario::kArgumentCoasterExcitement));
                 break;
             case STR_OBJECTIVE_REPLAY_LOAN_AND_PARK_VALUE:
-                ft.Add<money64>(objective.GetArgumentMoneyByDescriptor(Scenario::kArgumentParkValue));
+                ft.Add<money64>(objective.GetArgumentMoneyByDescriptor(&Scenario::kArgumentParkValue));
                 break;
             case STR_OBJECTIVE_MONTHLY_FOOD_INCOME:
-                ft.Add<money64>(objective.GetArgumentMoneyByDescriptor(Scenario::kArgumentIncomeShops));
+                ft.Add<money64>(objective.GetArgumentMoneyByDescriptor(&Scenario::kArgumentIncomeShops));
                 break;
             default:
                 // TODO: Format description for customized objectives

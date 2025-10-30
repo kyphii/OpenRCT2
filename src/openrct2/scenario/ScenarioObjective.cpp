@@ -19,34 +19,55 @@
 namespace OpenRCT2::Scenario
 {
 
-    static ScenarioObjective ScenarioObjectiveInitFromPreset(const ScenarioObjectiveDescriptor& preset)
+    ScenarioObjective ScenarioObjectiveInitFromPreset(const ScenarioObjectiveDescriptor& preset)
     {
         ScenarioObjective objective = {};
         objective.deadlineYear = preset.deadlineYear;
         objective.format = preset.name;
-        for (auto& goalDescriptor : preset.goals)
+        for (const auto* goalDescriptor : preset.goals)
         {
-            auto newGoal = new ScenarioGoal();
-            newGoal->descriptor = const_cast<GoalDescriptor*>(&goalDescriptor);
-
-            for (auto& argumentDescriptor : goalDescriptor.arguments)
+            if (goalDescriptor == nullptr)
             {
+                break;
+            }
+            auto newGoal = new ScenarioGoal();
+            newGoal->descriptor = const_cast<GoalDescriptor*>(goalDescriptor);
+
+            for (const auto* argumentDescriptor : goalDescriptor->arguments)
+            {
+                if (argumentDescriptor == nullptr)
+                {
+                    break;
+                }
                 auto newArgument = new ScenarioGoalArgument();
 
                 newArgument->descriptor = const_cast<GoalArgumentDescriptor*>(argumentDescriptor);
-                newArgument->value = argumentDescriptor->defaultValue;
+                switch (newArgument->descriptor->type)
+                {
+                    case GoalArgumentType::number:
+                    case GoalArgumentType::distance:
+                        newArgument->value.number = argumentDescriptor->defaultValue.number;
+                        break;
+                    case GoalArgumentType::money:
+                        newArgument->value.money = argumentDescriptor->defaultValue.money;
+                        break;
+                    case GoalArgumentType::rating:
+                        newArgument->value.rating = argumentDescriptor->defaultValue.rating;
+                        break;
+                }
+                
                 newArgument->enabled = !argumentDescriptor->isOptional;
 
                 newGoal->values.push_back(newArgument);
             }
 
-            objective.goals.push_back(*newGoal);
+            objective.goals.push_back(newGoal);
         }
         return objective;
     }
 
-    static ScenarioObjective ScenarioObjectiveInitFromLegacyType(
-        const LegacyObjectiveType type, uint8_t arg1, int32_t arg2, uint16_t arg3)
+    ScenarioObjective ScenarioObjectiveInitFromLegacyType(
+        const LegacyObjectiveType type, uint8_t arg1, int64_t arg2, uint16_t arg3)
     {
         // arg1 = years
         // arg2 = money, excitement
@@ -86,7 +107,7 @@ namespace OpenRCT2::Scenario
                 // Excitement
                 objective.SetArgumentRating(0, 1, arg2);
                 // Length
-                objective.SetArgumentNumber(0, 2, arg3);
+                objective.SetArgumentDistance(0, 2, arg3);
                 break;
             case LegacyObjectiveType::finishFiveRollercoasters:
                 // Excitement
@@ -106,7 +127,7 @@ namespace OpenRCT2::Scenario
         return objective;
     }
 
-    static ScenarioObjective ScenarioObjectiveInitFromLegacyType(const LegacyObjectiveType type)
+    ScenarioObjective ScenarioObjectiveInitFromLegacyType(const LegacyObjectiveType type)
     {
         ScenarioObjective objective = ScenarioObjectiveInitFromPreset(*kObjectivePresets[static_cast<uint8_t>(type)]);
         switch (type)
@@ -133,7 +154,7 @@ namespace OpenRCT2::Scenario
 
     void ScenarioObjective::SetArgumentNumber(int32_t goalIndex, int32_t argIndex, uint16_t value)
     {
-        auto* argument = this->goals.at(goalIndex).values.at(argIndex);
+        auto* argument = this->goals.at(goalIndex)->values.at(argIndex);
         Guard::Assert(argument->descriptor->type == GoalArgumentType::number);
         argument->value.number = std::clamp(
             value, argument->descriptor->minimumValue.number, argument->descriptor->maximumValue.number);
@@ -141,7 +162,7 @@ namespace OpenRCT2::Scenario
 
     void ScenarioObjective::SetArgumentMoney(int32_t goalIndex, int32_t argIndex, money64 value)
     {
-        auto* argument = this->goals.at(goalIndex).values.at(argIndex);
+        auto* argument = this->goals.at(goalIndex)->values.at(argIndex);
         Guard::Assert(argument->descriptor->type == GoalArgumentType::money);
         argument->value.money = std::clamp(
             value, argument->descriptor->minimumValue.money, argument->descriptor->maximumValue.money);
@@ -149,7 +170,7 @@ namespace OpenRCT2::Scenario
 
     void ScenarioObjective::SetArgumentRating(int32_t goalIndex, int32_t argIndex, RideRating_t value)
     {
-        auto* argument = this->goals.at(goalIndex).values.at(argIndex);
+        auto* argument = this->goals.at(goalIndex)->values.at(argIndex);
         Guard::Assert(argument->descriptor->type == GoalArgumentType::rating);
         argument->value.rating = std::clamp(
             value, argument->descriptor->minimumValue.rating, argument->descriptor->maximumValue.rating);
@@ -157,7 +178,7 @@ namespace OpenRCT2::Scenario
 
     void ScenarioObjective::SetArgumentDistance(int32_t goalIndex, int32_t argIndex, uint16_t value)
     {
-        auto* argument = this->goals.at(goalIndex).values.at(argIndex);
+        auto* argument = this->goals.at(goalIndex)->values.at(argIndex);
         Guard::Assert(argument->descriptor->type == GoalArgumentType::distance);
         argument->value.number = std::clamp(
             value, argument->descriptor->minimumValue.number, argument->descriptor->maximumValue.number);
@@ -165,26 +186,30 @@ namespace OpenRCT2::Scenario
 
     void ScenarioObjective::SetArgumentRideType(int32_t goalIndex, int32_t argIndex, ObjectEntryIndex value)
     {
-        auto* argument = this->goals.at(goalIndex).values.at(argIndex);
+        auto* argument = this->goals.at(goalIndex)->values.at(argIndex);
         Guard::Assert(argument->descriptor->type == GoalArgumentType::rideType);
         argument->value.rideType = value;
     }
 
     void ScenarioObjective::EnableArgument(int32_t goalIndex, int32_t argIndex)
     {
-        this->goals.at(goalIndex).values.at(argIndex)->enabled = true;
+        this->goals.at(goalIndex)->values.at(argIndex)->enabled = true;
     }
 
     void ScenarioObjective::DisableArgument(int32_t goalIndex, int32_t argIndex)
     {
-        this->goals.at(goalIndex).values.at(argIndex)->enabled = false;
+        this->goals.at(goalIndex)->values.at(argIndex)->enabled = false;
     }
 
     bool ScenarioObjective::IsArgumentEnabled(GoalArgumentDescriptor descriptor)
     {
         for (auto& goal : this->goals)
         {
-            for (auto& arg : goal.values)
+            if (goal == nullptr)
+            {
+                break;
+            }
+            for (auto& arg : goal->values)
             {
                 if (arg->descriptor == &descriptor && arg->enabled)
                 {
@@ -215,17 +240,23 @@ namespace OpenRCT2::Scenario
         {
             case GoalArgumentType::number:
             case GoalArgumentType::distance:
+            {
                 uint16_t expNumber = this->value.number + this->descriptor->valueIncrement.number;
                 this->value.number = std::min(expNumber, this->descriptor->maximumValue.number);
                 return this->value.number == expNumber;
+            }
             case GoalArgumentType::money:
+            {
                 money64 expMoney = this->value.money + this->descriptor->valueIncrement.money;
                 this->value.money = std::min(expMoney, this->descriptor->maximumValue.money);
                 return this->value.money == expMoney;
+            }
             case GoalArgumentType::rating:
+            {
                 RideRating_t expRating = this->value.rating + this->descriptor->valueIncrement.rating;
                 this->value.rating = std::min(expRating, this->descriptor->maximumValue.rating);
                 return this->value.rating == expRating;
+            }
         }
         return false;
     }
@@ -236,28 +267,34 @@ namespace OpenRCT2::Scenario
         {
             case GoalArgumentType::number:
             case GoalArgumentType::distance:
+            {
                 uint16_t expNumber = this->value.number - this->descriptor->valueIncrement.number;
                 this->value.number = std::max(expNumber, this->descriptor->minimumValue.number);
                 return this->value.number == expNumber;
+            }
             case GoalArgumentType::money:
+            {
                 money64 expMoney = this->value.money - this->descriptor->valueIncrement.money;
                 this->value.money = std::max(expMoney, this->descriptor->minimumValue.money);
                 return this->value.money == expMoney;
+            }
             case GoalArgumentType::rating:
+            {
                 RideRating_t expRating = this->value.rating - this->descriptor->valueIncrement.rating;
                 this->value.rating = std::max(expRating, this->descriptor->minimumValue.rating);
                 return this->value.rating == expRating;
+            }
         }
         return false;
     }
 
-    ScenarioGoalArgument* ScenarioObjective::GetArgumentByDescriptor(GoalArgumentDescriptor descriptor) const
+    ScenarioGoalArgument* ScenarioObjective::GetArgumentByDescriptor(const GoalArgumentDescriptor* descriptor) const
     {
         for (auto& goal : this->goals)
         {
-            for (auto& arg : goal.values)
+            for (auto& arg : goal->values)
             {
-                if (arg->descriptor == &descriptor && arg->enabled)
+                if (*arg->descriptor == *descriptor && arg->enabled)
                 {
                     return arg;
                 }
@@ -266,19 +303,19 @@ namespace OpenRCT2::Scenario
         return nullptr;
     }
 
-    uint16_t ScenarioObjective::GetArgumentNumberByDescriptor(GoalArgumentDescriptor descriptor) const
+    uint16_t ScenarioObjective::GetArgumentNumberByDescriptor(const GoalArgumentDescriptor* descriptor) const
     {
         auto* arg = GetArgumentByDescriptor(descriptor);
         return (arg != nullptr) ? arg->value.number : 0;
     }
 
-    money64 ScenarioObjective::GetArgumentMoneyByDescriptor(GoalArgumentDescriptor descriptor) const
+    money64 ScenarioObjective::GetArgumentMoneyByDescriptor(const GoalArgumentDescriptor* descriptor) const
     {
         auto* arg = GetArgumentByDescriptor(descriptor);
         return (arg != nullptr) ? arg->value.money : 0;
     }
 
-    RideRating_t ScenarioObjective::GetArgumentRatingByDescriptor(GoalArgumentDescriptor descriptor) const
+    RideRating_t ScenarioObjective::GetArgumentRatingByDescriptor(const GoalArgumentDescriptor* descriptor) const
     {
         auto* arg = GetArgumentByDescriptor(descriptor);
         return (arg != nullptr) ? arg->value.rating : 0;
@@ -289,7 +326,7 @@ namespace OpenRCT2::Scenario
         uint8_t i = 0;
         for (auto& goal : this->goals)
         {
-            if (goal.descriptor == nullptr)
+            if (goal->descriptor == nullptr)
             {
                 return i;
             }
@@ -305,7 +342,7 @@ namespace OpenRCT2::Scenario
     {
         for (auto& goal : this->goals)
         {
-            for (auto& arg : goal.values)
+            for (auto& arg : goal->values)
             {
                 if (!&arg->descriptor->allowClosingPark && arg->enabled)
                 {
@@ -325,12 +362,16 @@ namespace OpenRCT2::Scenario
         }
 
         bool hasDeadline = this->deadlineYear > 0;
-        bool atDeadline = hasDeadline && (GetDate().GetMonthsElapsed() >= this->deadlineYear * MONTH_COUNT);
+        bool atDeadline = hasDeadline && (GetDate().GetMonthsElapsed() >= static_cast<uint32_t>(this->deadlineYear * MONTH_COUNT));
         bool eligibleForCompletion = AllowEarlyCompletion() || atDeadline || !hasDeadline;
 
         for (auto& goal : this->goals)
         {
-            const auto& goalStatus = goal.Evaluate(park, gameState);
+            if (goal == nullptr)
+            {
+                break;
+            }
+            const auto& goalStatus = goal->Evaluate(park, gameState);
             if (goalStatus == ObjectiveStatus::Failure)
             {
                 return ObjectiveStatus::Failure;
@@ -397,18 +438,18 @@ namespace OpenRCT2::Scenario
 
     #pragma region EvaluationFunctions
     // Empty evaluator for sandbox-type objectives
-    static ObjectiveStatus EvaluateEmpty(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal)
+    ObjectiveStatus EvaluateEmpty(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal)
     {
         return ObjectiveStatus::Undecided;
     }
 
-    static ObjectiveStatus EvaluateGuests(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal)
+    ObjectiveStatus EvaluateGuests(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal)
     {
         uint16_t reqGuestCount = goal.GetArgumentValueNumber(0);
         return StatusFromBool(park.numGuestsInPark >= reqGuestCount);
     }
 
-    static ObjectiveStatus EvaluateParkRating(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal)
+    ObjectiveStatus EvaluateParkRating(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal)
     {
         uint16_t reqParkRating = goal.GetArgumentValueNumber(0);
         bool reqSustain = goal.GetArgumentEnabled(1);
@@ -461,25 +502,25 @@ namespace OpenRCT2::Scenario
         return StatusFromBool(park.rating >= reqParkRating);
     }
 
-    static ObjectiveStatus EvaluateParkValue(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal)
+    ObjectiveStatus EvaluateParkValue(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal)
     {
         money64 reqParkValue = goal.GetArgumentValueMoney(0);
         return StatusFromBool(park.value >= reqParkValue);
     }
 
-    static ObjectiveStatus EvaluateLoan(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal)
+    ObjectiveStatus EvaluateLoan(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal)
     {
         return StatusFromBool(park.bankLoan <= 0);
     }
 
-    static ObjectiveStatus EvaluateIncomeRides(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal)
+    ObjectiveStatus EvaluateIncomeRides(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal)
     {
         money64 reqIncome = goal.GetArgumentValueMoney(0);
         money64 lastMonthRideIncome = park.expenditureTable[1][EnumValue(ExpenditureType::parkRideTickets)];
         return StatusFromBool(lastMonthRideIncome >= reqIncome);
     }
 
-    static ObjectiveStatus EvaluateIncomeShops(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal)
+    ObjectiveStatus EvaluateIncomeShops(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal)
     {
         money64 reqIncome = goal.GetArgumentValueMoney(0);
         const auto* lastMonthExpenditure = park.expenditureTable[1];
@@ -505,7 +546,7 @@ namespace OpenRCT2::Scenario
         return true;
     }
 
-    static ObjectiveStatus EvaluateRollerCoasters(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal)
+    ObjectiveStatus EvaluateRollerCoasters(Park::ParkData& park, GameState_t& gameState, ScenarioGoal goal)
     {
         uint16_t reqCoasterCount = goal.GetArgumentValueNumber(0);
         RideRating_t reqCoasterExcitement = goal.GetArgumentValueRating(1);

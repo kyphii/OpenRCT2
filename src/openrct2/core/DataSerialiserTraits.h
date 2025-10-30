@@ -1030,8 +1030,8 @@ struct DataSerializerTraitsT<OpenRCT2::Scenario::ScenarioObjective>
         stream->WriteValue(objective.GetGoalCount());
         for (auto& goal : objective.goals)
         {
-            stream->WriteValue(goal.descriptor->index);
-            for (auto& arg : goal.values)
+            stream->WriteValue(goal->descriptor->index);
+            for (auto& arg : goal->values)
             {
                 stream->WriteValue(arg->enabled);
                 if (arg->enabled)
@@ -1067,7 +1067,7 @@ struct DataSerializerTraitsT<OpenRCT2::Scenario::ScenarioObjective>
         for (uint8_t i = 0; i < goalCount; i++)
         {
             OpenRCT2::Scenario::ScenarioGoal goal = {};
-            objective.goals[i] = goal;
+            objective.goals[i] = &goal;
             goal.descriptor = const_cast<OpenRCT2::Scenario::GoalDescriptor*>(
                 OpenRCT2::Scenario::kGoalList[stream->ReadValue<uint8_t>()]);
             uint8_t argCount = goal.descriptor->argCount;

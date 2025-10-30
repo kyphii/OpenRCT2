@@ -228,7 +228,7 @@ namespace OpenRCT2
             for (uint8_t i = 0; i < goalCount; i++)
             {
                 OpenRCT2::Scenario::ScenarioGoal goal = {};
-                objective.goals[i] = goal;
+                objective.goals[i] = &goal;
                 goal.descriptor = const_cast<OpenRCT2::Scenario::GoalDescriptor*>(
                     OpenRCT2::Scenario::kGoalList[cs.read<uint8_t>()]);
                 uint8_t argCount = goal.descriptor->argCount;
@@ -259,6 +259,7 @@ namespace OpenRCT2
                     }
                 }
             }
+            return objective;
         }
 
         ScenarioIndexEntry ReadScenarioChunk()
@@ -544,7 +545,8 @@ namespace OpenRCT2
 
         void ReadWriteScenarioChunk(GameState_t& gameState, OrcaStream& os)
         {
-            os.readWriteChunk(ParkFileChunkType::SCENARIO, [&gameState, &os](OrcaStream::ChunkStream& cs) {
+            const auto version = os.getHeader().targetVersion;
+            os.readWriteChunk(ParkFileChunkType::SCENARIO, [&gameState, &os, version](OrcaStream::ChunkStream& cs) {
                 cs.readWrite(gameState.scenarioOptions.category);
                 ReadWriteStringTable(cs, gameState.scenarioOptions.name, "en-GB");
                 ReadWriteStringTable(cs, gameState.park.name, "en-GB");
@@ -560,8 +562,8 @@ namespace OpenRCT2
                     cs.write(gameState.scenarioOptions.objective.GetGoalCount());
                     for (auto& goal : gameState.scenarioOptions.objective.goals)
                     {
-                        cs.write(goal.descriptor->index);
-                        for (auto& arg : goal.values)
+                        cs.write(goal->descriptor->index);
+                        for (auto& arg : goal->values)
                         {
                             cs.write(arg->enabled);
                             if (arg->enabled)
@@ -585,6 +587,16 @@ namespace OpenRCT2
                             }
                         }
                     }
+                }
+                else if (version < kModularObjectivesVersion)
+                {
+                    // wrong order is intentional here due to ReadWriteScenarioChunk writing guests first
+                    auto objectiveType = cs.read<Scenario::LegacyObjectiveType>();
+                    auto objectiveArg1 = cs.read<uint8_t>();
+                    auto objectiveArg3 = cs.read<uint16_t>();
+                    auto objectiveArg2 = cs.read<int32_t>();
+                    gameState.scenarioOptions.objective = Scenario::ScenarioObjectiveInitFromLegacyType(
+                        objectiveType, objectiveArg1, objectiveArg2, objectiveArg3);
                 }
                 else
                 {

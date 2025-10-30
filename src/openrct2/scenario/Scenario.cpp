@@ -519,7 +519,7 @@ static ResultWithMessage ScenarioPrepareRidesForSave(GameState_t& gameState)
     if (isCompleteCoasterObjective)
     {
         requiredIncompleteCoasters = gameState.scenarioOptions.objective.GetArgumentNumberByDescriptor(
-            kArgumentCoasterCount);
+            &kArgumentCoasterCount);
         if (requiredIncompleteCoasters == 0)
         {
             return { false, STR_NOT_ENOUGH_ROLLER_COASTERS };

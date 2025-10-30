@@ -58,7 +58,6 @@ namespace OpenRCT2::Scripting
 
         uint16_t guests_get()
         {
-            auto& gameState = getGameState();
             // TODO: Reimplement or remove for Modular objectives
             return 0;
         }
@@ -66,7 +65,6 @@ namespace OpenRCT2::Scripting
         void guests_set(uint16_t value)
         {
             ThrowIfGameStateNotMutable();
-            auto& gameState = getGameState();
             // TODO: Reimplement or remove for Modular objectives
         }
 
@@ -85,7 +83,6 @@ namespace OpenRCT2::Scripting
 
         uint16_t length_get()
         {
-            const auto& gameState = getGameState();
             // TODO: Reimplement or remove for Modular objectives
             return 0;
         }
@@ -93,13 +90,11 @@ namespace OpenRCT2::Scripting
         void length_set(uint16_t value)
         {
             ThrowIfGameStateNotMutable();
-            auto& gameState = getGameState();
             // TODO: Reimplement or remove for Modular objectives
         }
 
         money64 excitement_get()
         {
-            const auto& gameState = getGameState();
             // TODO: Reimplement or remove for Modular objectives
             return 0;
         }
@@ -107,13 +102,11 @@ namespace OpenRCT2::Scripting
         void excitement_set(money64 value)
         {
             ThrowIfGameStateNotMutable();
-            auto& gameState = getGameState();
             // TODO: Reimplement or remove for Modular objectives
         }
 
         money64 parkValue_get()
         {
-            const auto& gameState = getGameState();
             // TODO: Reimplement or remove for Modular objectives
             return 0;
         }
@@ -121,13 +114,11 @@ namespace OpenRCT2::Scripting
         void parkValue_set(money64 value)
         {
             ThrowIfGameStateNotMutable();
-            auto& gameState = getGameState();
             // TODO: Reimplement or remove for Modular objectives
         }
 
         money64 monthlyIncome_get()
         {
-            const auto& gameState = getGameState();
             // TODO: Reimplement or remove for Modular objectives
             return 0;
         }
