@@ -514,12 +514,11 @@ uint32_t ScenarioRandMax(uint32_t max)
  */
 static ResultWithMessage ScenarioPrepareRidesForSave(GameState_t& gameState)
 {
-    bool isCompleteCoasterObjective = gameState.scenarioOptions.objective->IsArgumentEnabled(kArgumentCoasterCompleteExisting);
+    bool isCompleteCoasterObjective = gameState.scenarioOptions.objective->IsArgumentEnabled(&kArgumentCoasterCompleteExisting);
     uint16_t requiredIncompleteCoasters = 0;
     if (isCompleteCoasterObjective)
     {
-        requiredIncompleteCoasters = gameState.scenarioOptions.objective->GetArgumentNumberByDescriptor(
-            &kArgumentCoasterCount);
+        requiredIncompleteCoasters = gameState.scenarioOptions.objective->GetArgumentValue<uint16_t>(&kArgumentCoasterCount);
         if (requiredIncompleteCoasters == 0)
         {
             return { false, STR_NOT_ENOUGH_ROLLER_COASTERS };
@@ -591,7 +590,7 @@ ResultWithMessage ScenarioPrepareForSave(GameState_t& gameState)
         return { false, prepareRidesResult.Message };
     }
 
-    if (gameState.scenarioOptions.objective->IsArgumentEnabled(kArgumentSustainParkRating))
+    if (gameState.scenarioOptions.objective->IsArgumentEnabled(&kArgumentSustainParkRating))
     {
         gameState.park.flags |= PARK_FLAGS_PARK_OPEN;
     }

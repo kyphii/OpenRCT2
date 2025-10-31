@@ -683,9 +683,7 @@ namespace OpenRCT2::Ui::Windows
                 if (obj == Scenario::LegacyObjectiveType::none || obj == Scenario::LegacyObjectiveType::buildTheBest)
                     continue;
 
-                auto descriptor = Scenario::kObjectivePresets[EnumValue(obj)];
-
-                if (descriptor->IsValidForSettings(
+                if (getGameState().scenarioOptions.objective->IsValidForSettings(
                         !(getGameState().park.flags & PARK_FLAGS_NO_MONEY), Park::RidePricesUnlocked()))
                 {
                     gDropdown.items[numItems] = Dropdown::MenuLabel(ObjectiveDropdownOptionNames[i]);
@@ -721,20 +719,7 @@ namespace OpenRCT2::Ui::Windows
 
         void Arg1Increase()
         {
-            Scenario::ScenarioGoalArgument* arg = nullptr; 
-            switch (objectiveType)
-            {
-                case Scenario::LegacyObjectiveType::finishFiveRollercoasters:
-                case Scenario::LegacyObjectiveType::tenRollercoasters:
-                    arg = getGameState().scenarioOptions.objective->goals[0]->values[1];
-                    break;
-                case Scenario::LegacyObjectiveType::tenRollercoastersLength:
-                    arg = getGameState().scenarioOptions.objective->goals[0]->values[2];
-                    break;
-                default:
-                    arg = getGameState().scenarioOptions.objective->goals[0]->values[0];
-                    break;
-            }
+            Scenario::ObjectiveArgument* arg = getGameState().scenarioOptions.objective->GetArgument(objectiveType); 
             if (arg != nullptr)
             {
                 if (arg->Increment())
@@ -750,20 +735,7 @@ namespace OpenRCT2::Ui::Windows
 
         void Arg1Decrease()
         {
-            Scenario::ScenarioGoalArgument* arg = nullptr;
-            switch (objectiveType)
-            {
-                case Scenario::LegacyObjectiveType::finishFiveRollercoasters:
-                case Scenario::LegacyObjectiveType::tenRollercoasters:
-                    arg = getGameState().scenarioOptions.objective->goals[0]->values[1];
-                    break;
-                case Scenario::LegacyObjectiveType::tenRollercoastersLength:
-                    arg = getGameState().scenarioOptions.objective->goals[0]->values[2];
-                    break;
-                default:
-                    arg = getGameState().scenarioOptions.objective->goals[0]->values[0];
-                    break;
-            }
+            Scenario::ObjectiveArgument* arg = getGameState().scenarioOptions.objective->GetArgument(objectiveType); 
             if (arg != nullptr)
             {
                 if (arg->Decrement())
@@ -882,9 +854,8 @@ namespace OpenRCT2::Ui::Windows
             onPrepareDraw();
             invalidateWidget(WIDX_TAB_1);
 
-            auto descriptor = Scenario::kObjectivePresets[EnumValue(objectiveType)];
-
-            if (!descriptor->IsValidForSettings(!(getGameState().park.flags & PARK_FLAGS_NO_MONEY), Park::RidePricesUnlocked()))
+            if (!getGameState().scenarioOptions.objective->IsValidForSettings(
+                    !(getGameState().park.flags & PARK_FLAGS_NO_MONEY), Park::RidePricesUnlocked()))
             {
                 // Reset objective
                 SetObjective(Scenario::LegacyObjectiveType::guestsAndRating);
@@ -1007,35 +978,29 @@ namespace OpenRCT2::Ui::Windows
                     case Scenario::LegacyObjectiveType::guestsBy:
                     case Scenario::LegacyObjectiveType::guestsAndRating:
                         stringId = STR_WINDOW_COLOUR_2_COMMA32;
-                        ft.Add<int32_t>(
-                            scenarioOptions.objective->GetArgumentNumberByDescriptor(&Scenario::kArgumentGuestCount));
+                        ft.Add<int32_t>(scenarioOptions.objective->GetArgumentValue<uint16_t>(objectiveType));
                         break;
                     case Scenario::LegacyObjectiveType::parkValueBy:
                     case Scenario::LegacyObjectiveType::repayLoanAndParkValue:
                         stringId = STR_CURRENCY_FORMAT_LABEL;
-                        ft.Add<money64>(
-                            scenarioOptions.objective->GetArgumentMoneyByDescriptor(&Scenario::kArgumentParkValue));
+                        ft.Add<money64>(scenarioOptions.objective->GetArgumentValue<money64>(objectiveType));
                         break;
                     case Scenario::LegacyObjectiveType::monthlyRideIncome:
                         stringId = STR_CURRENCY_FORMAT_LABEL;
-                        ft.Add<money64>(
-                            scenarioOptions.objective->GetArgumentMoneyByDescriptor(&Scenario::kArgumentIncomeRides));
+                        ft.Add<money64>(scenarioOptions.objective->GetArgumentValue<money64>(objectiveType));
                         break;
                     case Scenario::LegacyObjectiveType::monthlyFoodIncome:
                         stringId = STR_CURRENCY_FORMAT_LABEL;
-                        ft.Add<money64>(
-                            scenarioOptions.objective->GetArgumentMoneyByDescriptor(&Scenario::kArgumentIncomeShops));
+                        ft.Add<money64>(scenarioOptions.objective->GetArgumentValue<money64>(objectiveType));
                         break;
                     case Scenario::LegacyObjectiveType::tenRollercoastersLength:
                         stringId = STR_WINDOW_COLOUR_2_LENGTH;
-                        ft.Add<uint16_t>(
-                            scenarioOptions.objective->GetArgumentNumberByDescriptor(&Scenario::kArgumentCoasterLength));
+                        ft.Add<uint16_t>(scenarioOptions.objective->GetArgumentValue<uint16_t>(objectiveType));
                         break;
                     case Scenario::LegacyObjectiveType::finishFiveRollercoasters:
                     case Scenario::LegacyObjectiveType::tenRollercoasters:
                         stringId = STR_WINDOW_COLOUR_2_COMMA2DP32;
-                        ft.Add<uint16_t>(
-                            scenarioOptions.objective->GetArgumentNumberByDescriptor(&Scenario::kArgumentCoasterExcitement));
+                        ft.Add<uint16_t>(scenarioOptions.objective->GetArgumentValue<RideRating_t>(objectiveType));
                         break;
                     default:
                         stringId = STR_WINDOW_COLOUR_2_COMMA2DP32;

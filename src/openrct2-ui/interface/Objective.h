@@ -11,7 +11,7 @@
 
 #include <cstdint>
 #include <openrct2/localisation/StringIdType.h>
-#include <openrct2/scenario//ScenarioObjective.h>
+#include <openrct2/scenario/ScenarioObjective.h>
 
 namespace OpenRCT2
 {
@@ -25,5 +25,5 @@ namespace OpenRCT2::Scenario
 
 namespace OpenRCT2::Ui
 {
-    void formatObjective(Formatter& ft, const Scenario::ScenarioObjective* objective);
+    void formatObjective(Formatter& ft, const Scenario::Objective* objective);
 } // namespace OpenRCT2::Ui

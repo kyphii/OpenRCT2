@@ -214,9 +214,9 @@ namespace OpenRCT2
             Save(gameState, fs, compressionLevel);
         }
 
-        static Scenario::ScenarioObjective* ReadScenarioObjective(OrcaStream::ChunkStream& cs)
+        static Scenario::Objective* ReadScenarioObjective(OrcaStream::ChunkStream& cs)
         {
-            auto* objective = new Scenario::ScenarioObjective();
+            auto* objective = new Scenario::Objective();
 
             // For future-proofing, in case any objective format versioning is needed
             cs.read<int32_t>();
@@ -227,32 +227,32 @@ namespace OpenRCT2
             uint8_t goalCount = cs.read<uint8_t>();
             for (uint8_t i = 0; i < goalCount; i++)
             {
-                auto* goal = new Scenario::ScenarioGoal();
+                auto* goal = new Scenario::ObjectiveGoal();
                 objective->goals.push_back(goal);
                 goal->descriptor = const_cast<Scenario::GoalDescriptor*>(
                     Scenario::kGoalList[cs.read<uint8_t>()]);
                 uint8_t argCount = goal->descriptor->argCount;
                 for (uint8_t j = 0; j < argCount; j++)
                 {
-                    auto* arg = new Scenario::ScenarioGoalArgument();
-                    goal->values.push_back(arg);
-                    arg->descriptor = const_cast<Scenario::GoalArgumentDescriptor*>(goal->descriptor->arguments[j]);
+                    auto* arg = new Scenario::ObjectiveArgument();
+                    goal->args.push_back(arg);
+                    arg->descriptor = const_cast<Scenario::ArgumentDescriptor*>(goal->descriptor->arguments[j]);
                     arg->enabled = cs.read<bool>();
                     if (arg->enabled)
                     {
                         switch (arg->descriptor->type)
                         {
-                            case Scenario::GoalArgumentType::number:
-                            case Scenario::GoalArgumentType::distance:
+                            case Scenario::ArgumentType::number:
+                            case Scenario::ArgumentType::distance:
                                 arg->value.number = cs.read<uint16_t>();
                                 break;
-                            case Scenario::GoalArgumentType::money:
+                            case Scenario::ArgumentType::money:
                                 arg->value.money = cs.read<money64>();
                                 break;
-                            case Scenario::GoalArgumentType::rating:
+                            case Scenario::ArgumentType::rating:
                                 arg->value.rating = cs.read<RideRating_t>();
                                 break;
-                            case Scenario::GoalArgumentType::rideType:
+                            case Scenario::ArgumentType::rideType:
                                 arg->value.rideType = cs.read<ObjectEntryIndex>();
                                 break;
                         }
@@ -563,24 +563,24 @@ namespace OpenRCT2
                     for (auto& goal : gameState.scenarioOptions.objective->goals)
                     {
                         cs.write(goal->descriptor->index);
-                        for (auto& arg : goal->values)
+                        for (auto& arg : goal->args)
                         {
                             cs.write(arg->enabled);
                             if (arg->enabled)
                             {
                                 switch (arg->descriptor->type)
                                 {
-                                    case Scenario::GoalArgumentType::number:
-                                    case Scenario::GoalArgumentType::distance:
+                                    case Scenario::ArgumentType::number:
+                                    case Scenario::ArgumentType::distance:
                                         cs.write(arg->value.number);
                                         break;
-                                    case Scenario::GoalArgumentType::money:
+                                    case Scenario::ArgumentType::money:
                                         cs.write(arg->value.money);
                                         break;
-                                    case Scenario::GoalArgumentType::rating:
+                                    case Scenario::ArgumentType::rating:
                                         cs.write(arg->value.rating);
                                         break;
-                                    case Scenario::GoalArgumentType::rideType:
+                                    case Scenario::ArgumentType::rideType:
                                         cs.write(arg->value.rideType);
                                         break;
                                 }

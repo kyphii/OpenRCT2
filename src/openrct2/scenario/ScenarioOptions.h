@@ -19,7 +19,7 @@ namespace OpenRCT2::Scenario
 {
     struct Options
     {
-        ScenarioObjective* objective = nullptr;
+        Objective* objective = nullptr;
         Category category;
         std::string name;
         std::string details;
