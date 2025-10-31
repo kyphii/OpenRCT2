@@ -25,5 +25,5 @@ namespace OpenRCT2::Scenario
 
 namespace OpenRCT2::Ui
 {
-    void formatObjective(Formatter& ft, const Scenario::ScenarioObjective& objective);
+    void formatObjective(Formatter& ft, const Scenario::ScenarioObjective* objective);
 } // namespace OpenRCT2::Ui

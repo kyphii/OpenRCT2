@@ -173,27 +173,20 @@ protected:
         ds << item.SourceIndex;
         ds << item.ScenarioId;
 
-        uint8_t legacyId = OpenRCT2::Scenario::kObjectiveFormatNewId;
-        ds << legacyId;
-        if (ds.IsLoading() && legacyId <= OpenRCT2::Scenario::kObjectiveFormatNewId)
-        {
-            uint8_t objectiveArg1 = 0;
-            int64_t objectiveArg2 = 0;
-            uint16_t objectiveArg3 = 0;
-            ds << objectiveArg1;
-            ds << objectiveArg2;
-            ds << objectiveArg3;
-            const_cast<ScenarioIndexEntry&>(item).Objective = OpenRCT2::Scenario::ScenarioObjectiveInitFromLegacyType(
-                static_cast<OpenRCT2::Scenario::LegacyObjectiveType>(legacyId), objectiveArg1, objectiveArg2, objectiveArg3);
-        }
-        else
-        {
-            ds << item.Objective;
-        }
+        ds << item.LegacyObjective;
+        ds << item.LegacyArg1;
+        ds << item.LegacyArg2;
+        ds << item.LegacyArg3;
 
         ds << item.InternalName;
         ds << item.Name;
         ds << item.Details;
+
+        if (ds.IsLoading())
+        {
+            const_cast<ScenarioIndexEntry&>(item).Objective = Scenario::ScenarioObjectiveInitFromLegacyType(
+                item.LegacyObjective, item.LegacyArg1, item.LegacyArg2, item.LegacyArg3);
+        }
     }
 
 private:

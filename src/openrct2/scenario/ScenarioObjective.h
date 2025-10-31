@@ -75,9 +75,6 @@ namespace OpenRCT2::Scenario
     static constexpr size_t kMaxObjectiveGoals = 3;
     static constexpr size_t kMaxGoalArguments = 4;
 
-    // Used in Scenario Repository serialization to distinguish legacy objective ids from new format
-    static constexpr uint8_t kObjectiveFormatNewId = 255;
-
     struct ScenarioGoal;
 
     enum class ObjectiveStatus : uint8_t
@@ -247,10 +244,10 @@ namespace OpenRCT2::Scenario
         bool AllowsClosingPark() const;
     };
 
-    ScenarioObjective ScenarioObjectiveInitFromPreset(const ScenarioObjectiveDescriptor& preset);
-    ScenarioObjective ScenarioObjectiveInitFromLegacyType(
+    ScenarioObjective* ScenarioObjectiveInitFromPreset(const ScenarioObjectiveDescriptor& preset);
+    ScenarioObjective* ScenarioObjectiveInitFromLegacyType(
         const LegacyObjectiveType type, uint8_t arg1, int64_t arg2, uint16_t arg3);
-    ScenarioObjective ScenarioObjectiveInitFromLegacyType(
+    ScenarioObjective* ScenarioObjectiveInitFromLegacyType(
         const LegacyObjectiveType type);
 
     #pragma region GoalArgumentDescriptors

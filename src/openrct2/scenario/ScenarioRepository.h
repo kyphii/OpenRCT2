@@ -57,7 +57,11 @@ struct ScenarioIndexEntry
     uint16_t ScenarioId;
 
     // Objective
-    OpenRCT2::Scenario::ScenarioObjective Objective;
+    OpenRCT2::Scenario::LegacyObjectiveType LegacyObjective;
+    uint8_t LegacyArg1;     // years
+    int64_t LegacyArg2;     // money or excitement
+    uint16_t LegacyArg3;    // guests or rideID or coasterLength
+    OpenRCT2::Scenario::ScenarioObjective* Objective = nullptr;
 
     ScenarioHighscoreEntry* Highscore = nullptr;
 

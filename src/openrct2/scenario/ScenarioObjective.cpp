@@ -19,18 +19,18 @@
 namespace OpenRCT2::Scenario
 {
 
-    ScenarioObjective ScenarioObjectiveInitFromPreset(const ScenarioObjectiveDescriptor& preset)
+    ScenarioObjective* ScenarioObjectiveInitFromPreset(const ScenarioObjectiveDescriptor& preset)
     {
-        ScenarioObjective objective = {};
-        objective.deadlineYear = preset.deadlineYear;
-        objective.format = preset.name;
+        auto* objective = new ScenarioObjective();
+        objective->deadlineYear = preset.deadlineYear;
+        objective->format = preset.name;
         for (const auto* goalDescriptor : preset.goals)
         {
             if (goalDescriptor == nullptr)
             {
                 break;
             }
-            auto newGoal = new ScenarioGoal();
+            auto* newGoal = new ScenarioGoal();
             newGoal->descriptor = const_cast<GoalDescriptor*>(goalDescriptor);
 
             for (const auto* argumentDescriptor : goalDescriptor->arguments)
@@ -39,7 +39,7 @@ namespace OpenRCT2::Scenario
                 {
                     break;
                 }
-                auto newArgument = new ScenarioGoalArgument();
+                auto* newArgument = new ScenarioGoalArgument();
 
                 newArgument->descriptor = const_cast<GoalArgumentDescriptor*>(argumentDescriptor);
                 switch (newArgument->descriptor->type)
@@ -61,92 +61,90 @@ namespace OpenRCT2::Scenario
                 newGoal->values.push_back(newArgument);
             }
 
-            objective.goals.push_back(newGoal);
+            objective->goals.push_back(newGoal);
         }
         return objective;
     }
 
-    ScenarioObjective ScenarioObjectiveInitFromLegacyType(
+    ScenarioObjective* ScenarioObjectiveInitFromLegacyType(
         const LegacyObjectiveType type, uint8_t arg1, int64_t arg2, uint16_t arg3)
     {
         // arg1 = years
         // arg2 = money, excitement
         // arg3 = guests, rideID, coasterLength
 
-        ScenarioObjective objective = ScenarioObjectiveInitFromPreset(*kObjectivePresets[static_cast<uint8_t>(type)]);
+        auto* objective = ScenarioObjectiveInitFromLegacyType(type);
 
         switch (type)
         {
             case LegacyObjectiveType::guestsBy:
-                objective.deadlineYear = arg1;
+                objective->deadlineYear = arg1;
                 // Guest count
-                objective.SetArgumentNumber(0, 0, arg2);
+                objective->SetArgumentNumber(0, 0, arg3);
                 break;
             case LegacyObjectiveType::parkValueBy:
-                objective.deadlineYear = arg1;
+                objective->deadlineYear = arg1;
                 // Park Value
-                objective.SetArgumentMoney(0, 0, arg2);
+                objective->SetArgumentMoney(0, 0, arg2);
                 break;
             case LegacyObjectiveType::buildTheBest:
                 // Ride Type
-                objective.SetArgumentRideType(0, 0, arg3);
+                objective->SetArgumentRideType(0, 0, arg3);
                 break;
             case LegacyObjectiveType::tenRollercoasters:
                 // Excitement
-                objective.SetArgumentRating(0, 1, arg2);
+                objective->SetArgumentRating(0, 1, arg2);
                 break;
             case LegacyObjectiveType::guestsAndRating:
                 // Guest count
-                objective.SetArgumentNumber(0, 0, arg2);
+                objective->SetArgumentNumber(0, 0, arg3);
                 break;
             case LegacyObjectiveType::monthlyRideIncome:
                 // Income
-                objective.SetArgumentMoney(0, 0, arg2);
+                objective->SetArgumentMoney(0, 0, arg2);
                 break;
             case LegacyObjectiveType::tenRollercoastersLength:
                 // Excitement
-                objective.SetArgumentRating(0, 1, arg2);
+                objective->SetArgumentRating(0, 1, arg2);
                 // Length
-                objective.SetArgumentDistance(0, 2, arg3);
+                objective->SetArgumentDistance(0, 2, arg3);
                 break;
             case LegacyObjectiveType::finishFiveRollercoasters:
                 // Excitement
-                objective.SetArgumentRating(0, 1, arg2);
+                objective->SetArgumentRating(0, 1, arg2);
                 break;
             case LegacyObjectiveType::repayLoanAndParkValue:
                 // Park Value
-                objective.SetArgumentMoney(0, 0, arg2);
+                objective->SetArgumentMoney(0, 0, arg2);
                 break;
             case LegacyObjectiveType::monthlyFoodIncome:
                 // Income
-                objective.SetArgumentMoney(0, 0, arg2);
+                objective->SetArgumentMoney(0, 0, arg2);
                 break;
-            default:
-                objective = ScenarioObjectiveInitFromPreset(kObjectivePresetHaveFun);
         }
         return objective;
     }
 
-    ScenarioObjective ScenarioObjectiveInitFromLegacyType(const LegacyObjectiveType type)
+    ScenarioObjective* ScenarioObjectiveInitFromLegacyType(const LegacyObjectiveType type)
     {
-        ScenarioObjective objective = ScenarioObjectiveInitFromPreset(*kObjectivePresets[static_cast<uint8_t>(type)]);
+        auto* objective = ScenarioObjectiveInitFromPreset(*kObjectivePresets[static_cast<uint8_t>(type)]);
         switch (type)
         {
             case LegacyObjectiveType::guestsAndRating:
                 // Park rating
-                objective.SetArgumentNumber(1, 0, kObjectiveParkRatingSustain);
+                objective->SetArgumentNumber(1, 0, kObjectiveParkRatingSustain);
                 // Enable sustain checks
-                objective.EnableArgument(1, 1);
+                objective->EnableArgument(1, 1);
                 break;
             case LegacyObjectiveType::tenRollercoastersLength:
                 // Enable length requirement
-                objective.EnableArgument(0, 2);
+                objective->EnableArgument(0, 2);
                 break;
             case LegacyObjectiveType::finishFiveRollercoasters:
                 // Coaster Count
-                objective.SetArgumentNumber(0, 0, 5);
+                objective->SetArgumentNumber(0, 0, 5);
                 // Enable finish prebuilts
-                objective.EnableArgument(0, 3);
+                objective->EnableArgument(0, 3);
                 break;
         }
         return objective;
@@ -294,7 +292,7 @@ namespace OpenRCT2::Scenario
         {
             for (auto& arg : goal->values)
             {
-                if (*arg->descriptor == *descriptor && arg->enabled)
+                if (arg->descriptor->index == descriptor->index && arg->enabled)
                 {
                     return arg;
                 }

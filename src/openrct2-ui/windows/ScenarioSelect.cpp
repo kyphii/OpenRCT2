@@ -397,11 +397,13 @@ namespace OpenRCT2::Ui::Windows
             ft.Add<const char*>(scenario->Details.c_str());
             screenPos.y += DrawTextWrapped(rt, screenPos, previewPaneWidth, STR_BLACK_STRING, ft) + 5;
 
-            // Scenario objective
-            ft = Formatter();
-            ft.Add<StringId>(scenario->Objective.format);
-            formatObjective(ft, scenario->Objective);
-            screenPos.y += DrawTextWrapped(rt, screenPos, previewPaneWidth, STR_OBJECTIVE, ft) + 5;
+            if (scenario->Objective != nullptr) {
+                // Scenario objective
+                ft = Formatter();
+                ft.Add<StringId>(scenario->Objective->format);
+                formatObjective(ft, scenario->Objective);
+                screenPos.y += DrawTextWrapped(rt, screenPos, previewPaneWidth, STR_OBJECTIVE, ft) + 5;
+            }
 
             // Scenario score
             if (scenario->Highscore != nullptr)

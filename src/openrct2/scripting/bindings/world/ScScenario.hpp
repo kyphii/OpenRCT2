@@ -71,14 +71,14 @@ namespace OpenRCT2::Scripting
         uint8_t year_get()
         {
             const auto& gameState = getGameState();
-            return gameState.scenarioOptions.objective.deadlineYear;
+            return gameState.scenarioOptions.objective->deadlineYear;
         }
 
         void year_set(uint8_t value)
         {
             auto& gameState = getGameState();
             ThrowIfGameStateNotMutable();
-            gameState.scenarioOptions.objective.deadlineYear = value;
+            gameState.scenarioOptions.objective->deadlineYear = value;
         }
 
         uint16_t length_get()

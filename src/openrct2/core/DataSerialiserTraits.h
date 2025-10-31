@@ -1018,17 +1018,17 @@ struct DataSerializerTraitsT<FootpathSlope>
 };
 
 template<>
-struct DataSerializerTraitsT<OpenRCT2::Scenario::ScenarioObjective>
+struct DataSerializerTraitsT<OpenRCT2::Scenario::ScenarioObjective*>
 {
-    static void encode(OpenRCT2::IStream* stream, const OpenRCT2::Scenario::ScenarioObjective objective)
+    static void encode(OpenRCT2::IStream* stream, const OpenRCT2::Scenario::ScenarioObjective* objective)
     {
         // Reserved for future versioning
-        stream->WriteValue(0);
+        stream->WriteValue(static_cast<uint8_t>(0));
 
-        stream->WriteValue(objective.format);
-        stream->WriteValue(objective.deadlineYear);
-        stream->WriteValue(objective.GetGoalCount());
-        for (auto& goal : objective.goals)
+        stream->WriteValue(objective->format);
+        stream->WriteValue(objective->deadlineYear);
+        stream->WriteValue(objective->GetGoalCount());
+        for (auto& goal : objective->goals)
         {
             stream->WriteValue(goal->descriptor->index);
             for (auto& arg : goal->values)
@@ -1057,42 +1057,46 @@ struct DataSerializerTraitsT<OpenRCT2::Scenario::ScenarioObjective>
         }
     }
 
-    static void decode(OpenRCT2::IStream* stream, OpenRCT2::Scenario::ScenarioObjective objective)
+    static void decode(OpenRCT2::IStream* stream, OpenRCT2::Scenario::ScenarioObjective* objective)
     {
-        stream->ReadValue<int32_t>();
+        stream->ReadValue<uint8_t>();
+        if (objective == nullptr)
+        {
+            objective = new OpenRCT2::Scenario::ScenarioObjective();
+        }
 
-        objective.format = stream->ReadValue<StringId>();
-        objective.deadlineYear = stream->ReadValue<uint8_t>();
+        objective->format = stream->ReadValue<StringId>();
+        objective->deadlineYear = stream->ReadValue<uint8_t>();
         uint8_t goalCount = stream->ReadValue<uint8_t>();
         for (uint8_t i = 0; i < goalCount; i++)
         {
-            OpenRCT2::Scenario::ScenarioGoal goal = {};
-            objective.goals[i] = &goal;
-            goal.descriptor = const_cast<OpenRCT2::Scenario::GoalDescriptor*>(
+            auto* goal = new OpenRCT2::Scenario::ScenarioGoal();
+            objective->goals.push_back(goal);
+            goal->descriptor = const_cast<OpenRCT2::Scenario::GoalDescriptor*>(
                 OpenRCT2::Scenario::kGoalList[stream->ReadValue<uint8_t>()]);
-            uint8_t argCount = goal.descriptor->argCount;
+            uint8_t argCount = goal->descriptor->argCount;
             for (uint8_t j = 0; j < argCount; j++)
             {
-                OpenRCT2::Scenario::ScenarioGoalArgument arg = {};
-                goal.values[j] = &arg;
-                arg.descriptor = const_cast<OpenRCT2::Scenario::GoalArgumentDescriptor*>(goal.descriptor->arguments[j]);
-                arg.enabled = stream->ReadValue<bool>();
-                if (arg.enabled)
+                auto* arg = new OpenRCT2::Scenario::ScenarioGoalArgument();
+                goal->values.push_back(arg);
+                arg->descriptor = const_cast<OpenRCT2::Scenario::GoalArgumentDescriptor*>(goal->descriptor->arguments[j]);
+                arg->enabled = stream->ReadValue<bool>();
+                if (arg->enabled)
                 {
-                    switch (arg.descriptor->type)
+                    switch (arg->descriptor->type)
                     {
                         case OpenRCT2::Scenario::GoalArgumentType::number:
                         case OpenRCT2::Scenario::GoalArgumentType::distance:
-                            arg.value.number = stream->ReadValue<uint16_t>();
+                            arg->value.number = stream->ReadValue<uint16_t>();
                             break;
                         case OpenRCT2::Scenario::GoalArgumentType::money:
-                            arg.value.money = stream->ReadValue<money64>();
+                            arg->value.money = stream->ReadValue<money64>();
                             break;
                         case OpenRCT2::Scenario::GoalArgumentType::rating:
-                            arg.value.rating = stream->ReadValue<OpenRCT2::RideRating_t>();
+                            arg->value.rating = stream->ReadValue<OpenRCT2::RideRating_t>();
                             break;
                         case OpenRCT2::Scenario::GoalArgumentType::rideType:
-                            arg.value.rideType = stream->ReadValue<OpenRCT2::ObjectEntryIndex>();
+                            arg->value.rideType = stream->ReadValue<OpenRCT2::ObjectEntryIndex>();
                             break;
                     }
                 }
@@ -1100,8 +1104,9 @@ struct DataSerializerTraitsT<OpenRCT2::Scenario::ScenarioObjective>
         }
     }
 
-    static void log(OpenRCT2::IStream* stream, const OpenRCT2::Scenario::ScenarioObjective objective)
+    static void log(OpenRCT2::IStream* stream, const OpenRCT2::Scenario::ScenarioObjective* objective)
     {
+        // TODO: objectives log
         char msg[128] = {};
         snprintf(msg, sizeof(msg), "ScenarioObjective()");
         stream->Write(msg, strlen(msg));

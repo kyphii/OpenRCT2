@@ -82,7 +82,7 @@ void ScenarioBegin(GameState_t& gameState)
     GameLoadInit();
     ScenarioReset(gameState);
 
-    if (gameState.scenarioOptions.objective.displayOnLoad && !gLoadKeepWindowsOpen)
+    if (gameState.scenarioOptions.objective->displayOnLoad && !gLoadKeepWindowsOpen)
         ContextOpenWindowView(WindowView::parkObjective);
 
     gScreenAge = 0;
@@ -514,11 +514,11 @@ uint32_t ScenarioRandMax(uint32_t max)
  */
 static ResultWithMessage ScenarioPrepareRidesForSave(GameState_t& gameState)
 {
-    bool isCompleteCoasterObjective = gameState.scenarioOptions.objective.IsArgumentEnabled(kArgumentCoasterCompleteExisting);
+    bool isCompleteCoasterObjective = gameState.scenarioOptions.objective->IsArgumentEnabled(kArgumentCoasterCompleteExisting);
     uint16_t requiredIncompleteCoasters = 0;
     if (isCompleteCoasterObjective)
     {
-        requiredIncompleteCoasters = gameState.scenarioOptions.objective.GetArgumentNumberByDescriptor(
+        requiredIncompleteCoasters = gameState.scenarioOptions.objective->GetArgumentNumberByDescriptor(
             &kArgumentCoasterCount);
         if (requiredIncompleteCoasters == 0)
         {
@@ -591,7 +591,7 @@ ResultWithMessage ScenarioPrepareForSave(GameState_t& gameState)
         return { false, prepareRidesResult.Message };
     }
 
-    if (gameState.scenarioOptions.objective.IsArgumentEnabled(kArgumentSustainParkRating))
+    if (gameState.scenarioOptions.objective->IsArgumentEnabled(kArgumentSustainParkRating))
     {
         gameState.park.flags |= PARK_FLAGS_PARK_OPEN;
     }
@@ -621,7 +621,7 @@ bool AllowEarlyCompletion()
 static void ScenarioCheckObjective(GameState_t& gameState)
 {
     auto& park = gameState.park;
-    auto status = gameState.scenarioOptions.objective.ScenarioEvaluateObjective(park, gameState);
+    auto status = gameState.scenarioOptions.objective->ScenarioEvaluateObjective(park, gameState);
     if (status == ObjectiveStatus::Success)
     {
         ScenarioSuccess(gameState);

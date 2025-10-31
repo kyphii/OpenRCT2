@@ -726,13 +726,13 @@ namespace OpenRCT2::Ui::Windows
             {
                 case Scenario::LegacyObjectiveType::finishFiveRollercoasters:
                 case Scenario::LegacyObjectiveType::tenRollercoasters:
-                    arg = getGameState().scenarioOptions.objective.goals[0]->values[1];
+                    arg = getGameState().scenarioOptions.objective->goals[0]->values[1];
                     break;
                 case Scenario::LegacyObjectiveType::tenRollercoastersLength:
-                    arg = getGameState().scenarioOptions.objective.goals[0]->values[2];
+                    arg = getGameState().scenarioOptions.objective->goals[0]->values[2];
                     break;
                 default:
-                    arg = getGameState().scenarioOptions.objective.goals[0]->values[0];
+                    arg = getGameState().scenarioOptions.objective->goals[0]->values[0];
                     break;
             }
             if (arg != nullptr)
@@ -755,13 +755,13 @@ namespace OpenRCT2::Ui::Windows
             {
                 case Scenario::LegacyObjectiveType::finishFiveRollercoasters:
                 case Scenario::LegacyObjectiveType::tenRollercoasters:
-                    arg = getGameState().scenarioOptions.objective.goals[0]->values[1];
+                    arg = getGameState().scenarioOptions.objective->goals[0]->values[1];
                     break;
                 case Scenario::LegacyObjectiveType::tenRollercoastersLength:
-                    arg = getGameState().scenarioOptions.objective.goals[0]->values[2];
+                    arg = getGameState().scenarioOptions.objective->goals[0]->values[2];
                     break;
                 default:
-                    arg = getGameState().scenarioOptions.objective.goals[0]->values[0];
+                    arg = getGameState().scenarioOptions.objective->goals[0]->values[0];
                     break;
             }
             if (arg != nullptr)
@@ -779,7 +779,7 @@ namespace OpenRCT2::Ui::Windows
 
         void Arg2Increase()
         {
-            if (getGameState().scenarioOptions.objective.IncrementDeadlineYear())
+            if (getGameState().scenarioOptions.objective->IncrementDeadlineYear())
             {
                 invalidate();
             }
@@ -791,7 +791,7 @@ namespace OpenRCT2::Ui::Windows
 
         void Arg2Decrease()
         {
-            if (getGameState().scenarioOptions.objective.DecrementDeadlineYear())
+            if (getGameState().scenarioOptions.objective->DecrementDeadlineYear())
             {
                 invalidate();
             }
@@ -1007,30 +1007,35 @@ namespace OpenRCT2::Ui::Windows
                     case Scenario::LegacyObjectiveType::guestsBy:
                     case Scenario::LegacyObjectiveType::guestsAndRating:
                         stringId = STR_WINDOW_COLOUR_2_COMMA32;
-                        ft.Add<int32_t>(scenarioOptions.objective.GetArgumentNumberByDescriptor(&Scenario::kArgumentGuestCount));
+                        ft.Add<int32_t>(
+                            scenarioOptions.objective->GetArgumentNumberByDescriptor(&Scenario::kArgumentGuestCount));
                         break;
                     case Scenario::LegacyObjectiveType::parkValueBy:
                     case Scenario::LegacyObjectiveType::repayLoanAndParkValue:
                         stringId = STR_CURRENCY_FORMAT_LABEL;
-                        ft.Add<money64>(scenarioOptions.objective.GetArgumentMoneyByDescriptor(&Scenario::kArgumentParkValue));
+                        ft.Add<money64>(
+                            scenarioOptions.objective->GetArgumentMoneyByDescriptor(&Scenario::kArgumentParkValue));
                         break;
                     case Scenario::LegacyObjectiveType::monthlyRideIncome:
                         stringId = STR_CURRENCY_FORMAT_LABEL;
-                        ft.Add<money64>(scenarioOptions.objective.GetArgumentMoneyByDescriptor(&Scenario::kArgumentIncomeRides));
+                        ft.Add<money64>(
+                            scenarioOptions.objective->GetArgumentMoneyByDescriptor(&Scenario::kArgumentIncomeRides));
                         break;
                     case Scenario::LegacyObjectiveType::monthlyFoodIncome:
                         stringId = STR_CURRENCY_FORMAT_LABEL;
-                        ft.Add<money64>(scenarioOptions.objective.GetArgumentMoneyByDescriptor(&Scenario::kArgumentIncomeShops));
+                        ft.Add<money64>(
+                            scenarioOptions.objective->GetArgumentMoneyByDescriptor(&Scenario::kArgumentIncomeShops));
                         break;
                     case Scenario::LegacyObjectiveType::tenRollercoastersLength:
                         stringId = STR_WINDOW_COLOUR_2_LENGTH;
-                        ft.Add<uint16_t>(scenarioOptions.objective.GetArgumentNumberByDescriptor(&Scenario::kArgumentCoasterLength));
+                        ft.Add<uint16_t>(
+                            scenarioOptions.objective->GetArgumentNumberByDescriptor(&Scenario::kArgumentCoasterLength));
                         break;
                     case Scenario::LegacyObjectiveType::finishFiveRollercoasters:
                     case Scenario::LegacyObjectiveType::tenRollercoasters:
                         stringId = STR_WINDOW_COLOUR_2_COMMA2DP32;
                         ft.Add<uint16_t>(
-                            scenarioOptions.objective.GetArgumentNumberByDescriptor(&Scenario::kArgumentCoasterExcitement));
+                            scenarioOptions.objective->GetArgumentNumberByDescriptor(&Scenario::kArgumentCoasterExcitement));
                         break;
                     default:
                         stringId = STR_WINDOW_COLOUR_2_COMMA2DP32;
@@ -1045,7 +1050,7 @@ namespace OpenRCT2::Ui::Windows
                 screenCoords = windowPos
                     + ScreenCoordsXY{ widgets[WIDX_OBJECTIVE_ARG_2].left + 1, widgets[WIDX_OBJECTIVE_ARG_2].top };
                 ft = Formatter();
-                ft.Add<uint16_t>((scenarioOptions.objective.deadlineYear * MONTH_COUNT) - 1);
+                ft.Add<uint16_t>((scenarioOptions.objective->deadlineYear * MONTH_COUNT) - 1);
                 DrawTextBasic(rt, screenCoords, STR_WINDOW_OBJECTIVE_VALUE_DATE, ft);
             }
         }

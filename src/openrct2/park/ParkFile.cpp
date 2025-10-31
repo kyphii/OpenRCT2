@@ -214,46 +214,46 @@ namespace OpenRCT2
             Save(gameState, fs, compressionLevel);
         }
 
-        static Scenario::ScenarioObjective ReadScenarioObjective(OrcaStream::ChunkStream& cs)
+        static Scenario::ScenarioObjective* ReadScenarioObjective(OrcaStream::ChunkStream& cs)
         {
-            Scenario::ScenarioObjective objective = {};
+            auto* objective = new Scenario::ScenarioObjective();
 
             // For future-proofing, in case any objective format versioning is needed
             cs.read<int32_t>();
 
-            objective.format = cs.read<StringId>();
-            objective.deadlineYear = cs.read<uint8_t>();
+            objective->format = cs.read<StringId>();
+            objective->deadlineYear = cs.read<uint8_t>();
             
             uint8_t goalCount = cs.read<uint8_t>();
             for (uint8_t i = 0; i < goalCount; i++)
             {
-                OpenRCT2::Scenario::ScenarioGoal goal = {};
-                objective.goals[i] = &goal;
-                goal.descriptor = const_cast<OpenRCT2::Scenario::GoalDescriptor*>(
-                    OpenRCT2::Scenario::kGoalList[cs.read<uint8_t>()]);
-                uint8_t argCount = goal.descriptor->argCount;
+                auto* goal = new Scenario::ScenarioGoal();
+                objective->goals.push_back(goal);
+                goal->descriptor = const_cast<Scenario::GoalDescriptor*>(
+                    Scenario::kGoalList[cs.read<uint8_t>()]);
+                uint8_t argCount = goal->descriptor->argCount;
                 for (uint8_t j = 0; j < argCount; j++)
                 {
-                    OpenRCT2::Scenario::ScenarioGoalArgument arg = {};
-                    goal.values[j] = &arg;
-                    arg.descriptor = const_cast<OpenRCT2::Scenario::GoalArgumentDescriptor*>(goal.descriptor->arguments[j]);
-                    arg.enabled = cs.read<bool>();
-                    if (arg.enabled)
+                    auto* arg = new Scenario::ScenarioGoalArgument();
+                    goal->values.push_back(arg);
+                    arg->descriptor = const_cast<Scenario::GoalArgumentDescriptor*>(goal->descriptor->arguments[j]);
+                    arg->enabled = cs.read<bool>();
+                    if (arg->enabled)
                     {
-                        switch (arg.descriptor->type)
+                        switch (arg->descriptor->type)
                         {
-                            case OpenRCT2::Scenario::GoalArgumentType::number:
-                            case OpenRCT2::Scenario::GoalArgumentType::distance:
-                                arg.value.number = cs.read<uint16_t>();
+                            case Scenario::GoalArgumentType::number:
+                            case Scenario::GoalArgumentType::distance:
+                                arg->value.number = cs.read<uint16_t>();
                                 break;
-                            case OpenRCT2::Scenario::GoalArgumentType::money:
-                                arg.value.money = cs.read<money64>();
+                            case Scenario::GoalArgumentType::money:
+                                arg->value.money = cs.read<money64>();
                                 break;
-                            case OpenRCT2::Scenario::GoalArgumentType::rating:
-                                arg.value.rating = cs.read<RideRating_t>();
+                            case Scenario::GoalArgumentType::rating:
+                                arg->value.rating = cs.read<RideRating_t>();
                                 break;
-                            case OpenRCT2::Scenario::GoalArgumentType::rideType:
-                                arg.value.rideType = cs.read<ObjectEntryIndex>();
+                            case Scenario::GoalArgumentType::rideType:
+                                arg->value.rideType = cs.read<ObjectEntryIndex>();
                                 break;
                         }
                     }
@@ -298,7 +298,7 @@ namespace OpenRCT2
                     entry.Objective = ReadScenarioObjective(cs);
                 }
                 // Objective window should display when starting a new scenario
-                entry.Objective.displayOnLoad = true;
+                entry.Objective->displayOnLoad = true;
 
                 entry.SourceGame = ScenarioSource::Other;
             });
@@ -557,10 +557,10 @@ namespace OpenRCT2
                     // Reserved for future versioning
                     cs.write(0);
 
-                    cs.write(gameState.scenarioOptions.objective.format);
-                    cs.write(gameState.scenarioOptions.objective.deadlineYear);
-                    cs.write(gameState.scenarioOptions.objective.GetGoalCount());
-                    for (auto& goal : gameState.scenarioOptions.objective.goals)
+                    cs.write(gameState.scenarioOptions.objective->format);
+                    cs.write(gameState.scenarioOptions.objective->deadlineYear);
+                    cs.write(gameState.scenarioOptions.objective->GetGoalCount());
+                    for (auto& goal : gameState.scenarioOptions.objective->goals)
                     {
                         cs.write(goal->descriptor->index);
                         for (auto& arg : goal->values)
@@ -570,17 +570,17 @@ namespace OpenRCT2
                             {
                                 switch (arg->descriptor->type)
                                 {
-                                    case OpenRCT2::Scenario::GoalArgumentType::number:
-                                    case OpenRCT2::Scenario::GoalArgumentType::distance:
+                                    case Scenario::GoalArgumentType::number:
+                                    case Scenario::GoalArgumentType::distance:
                                         cs.write(arg->value.number);
                                         break;
-                                    case OpenRCT2::Scenario::GoalArgumentType::money:
+                                    case Scenario::GoalArgumentType::money:
                                         cs.write(arg->value.money);
                                         break;
-                                    case OpenRCT2::Scenario::GoalArgumentType::rating:
+                                    case Scenario::GoalArgumentType::rating:
                                         cs.write(arg->value.rating);
                                         break;
-                                    case OpenRCT2::Scenario::GoalArgumentType::rideType:
+                                    case Scenario::GoalArgumentType::rideType:
                                         cs.write(arg->value.rideType);
                                         break;
                                 }
@@ -601,7 +601,7 @@ namespace OpenRCT2
                 else
                 {
                     gameState.scenarioOptions.objective = ReadScenarioObjective(cs);
-                    gameState.scenarioOptions.objective.displayOnLoad = false;
+                    gameState.scenarioOptions.objective->displayOnLoad = false;
                 }
 
                 cs.readWrite(gameState.scenarioParkRatingWarningDays);

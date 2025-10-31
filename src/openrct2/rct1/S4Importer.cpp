@@ -240,7 +240,8 @@ namespace OpenRCT2::RCT1
             dst->SourceIndex = desc.index;
             dst->ScenarioId = desc.id;
 
-            uint16_t objectiveArg2, objectiveArg3;
+            int64_t objectiveArg2 = 0;
+            uint16_t objectiveArg3 = 0;
             // RCT1 used another way of calculating park value.
             if (_s4.ScenarioObjectiveType == Scenario::LegacyObjectiveType::parkValueBy)
                 objectiveArg2 = CorrectRCT1ParkValue(_s4.ScenarioObjectiveCurrency);
@@ -2443,12 +2444,13 @@ namespace OpenRCT2::RCT1
 
         void ImportScenarioObjective(GameState_t& gameState)
         {
-            uint16_t objectiveArg2, objectiveArg3;
+            int64_t objectiveArg2 = 0;
+            uint16_t objectiveArg3 = 0;
             // RCT1 used another way of calculating park value.
             if (_s4.ScenarioObjectiveType == Scenario::LegacyObjectiveType::parkValueBy)
                 objectiveArg2 = CorrectRCT1ParkValue(_s4.ScenarioObjectiveCurrency);
             else
-                objectiveArg2 = ToMoney64(_s4.ScenarioObjectiveCurrency);
+                objectiveArg2 = _s4.ScenarioObjectiveCurrency;
             objectiveArg3 = _s4.ScenarioObjectiveNumGuests;
             // This does not seem to be saved in the objective arguments, so look up the ID from the available rides instead.
             if (_s4.ScenarioObjectiveType == Scenario::LegacyObjectiveType::buildTheBest)
