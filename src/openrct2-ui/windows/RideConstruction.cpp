@@ -146,6 +146,7 @@ namespace OpenRCT2::Ui::Windows
         WIDX_SPEED_SETTING_SPINNER,
         WIDX_SPEED_SETTING_SPINNER_UP,
         WIDX_SPEED_SETTING_SPINNER_DOWN,
+        WIDX_ALTERNATE_PIECE,
     };
 
     VALIDATE_GLOBAL_WIDX(WC_RIDE_CONSTRUCTION, WIDX_CONSTRUCT);
@@ -194,7 +195,8 @@ namespace OpenRCT2::Ui::Windows
         makeSpinnerWidgets({123, 136}, {              58,  14}, WidgetType::spinner,  WindowColour::secondary, 0,                                                STR_RIDE_CONSTRUCTION_SELECT_SEAT_ROTATION_ANGLE_TIP),
         makeWidget        ({161, 338}, {              24,  24}, WidgetType::flatBtn,  WindowColour::secondary, ImageId(SPR_G2_SIMULATE),                         STR_SIMULATE_RIDE_TIP                               ),
         makeWidget        ({  3, 120}, {     kGroupWidth,  41}, WidgetType::groupbox, WindowColour::primary,   STR_RIDE_CONSTRUCTION_BRAKE_SPEED                                                                     ),
-        makeSpinnerWidgets({ 12, 136}, {              85,  14}, WidgetType::spinner,  WindowColour::secondary, kStringIdEmpty,                                   STR_RIDE_CONSTRUCTION_BRAKE_SPEED_LIMIT_TIP         )
+        makeSpinnerWidgets({ 12, 136}, {              85,  14}, WidgetType::spinner,  WindowColour::secondary, kStringIdEmpty,                                   STR_RIDE_CONSTRUCTION_BRAKE_SPEED_LIMIT_TIP         ),
+        makeWidget        ({180, 167}, {              24,  24}, WidgetType::flatBtn,  WindowColour::secondary, ImageId(SPR_G2_BUTTON_CYCLE),                     STR_RIDE_CONSTRUCTION_ALTERNATE_PIECE_TIP           )
     );
     // clang-format on
 
@@ -1538,6 +1540,20 @@ namespace OpenRCT2::Ui::Windows
                         }
                     }
                     break;
+                case WIDX_ALTERNATE_PIECE:
+                    auto nextSelectedElement = WindowRideConstructionUpdateStateGetTrackElement();
+                    if (std::get<0>(nextSelectedElement))
+                    {
+                        TrackElemType alternatePiece = GetAlternateTrackPiece(std::get<1>(nextSelectedElement));
+                        if (alternatePiece != TrackElemType::none)
+                        {
+                            RideConstructionInvalidateCurrentTrack();
+                            _currentlySelectedTrack = alternatePiece;
+                            _currentTrackPrice = kMoney64Undefined;
+                            WindowRideConstructionUpdateActiveElements();
+                        }
+                    }
+                    break; 
             }
         }
 
@@ -2029,6 +2045,20 @@ namespace OpenRCT2::Ui::Windows
                 widgets[WIDX_NEXT_SECTION].setVisible();
             }
 
+            auto nextSelectedElement = WindowRideConstructionUpdateStateGetTrackElement();
+            if (std::get<0>(nextSelectedElement))
+            {
+                TrackElemType alternatePiece = GetAlternateTrackPiece(std::get<1>(nextSelectedElement));
+                if (alternatePiece != TrackElemType::none)
+                {
+                    widgets[WIDX_ALTERNATE_PIECE].setVisible();
+                }
+                else
+                {
+                    widgets[WIDX_ALTERNATE_PIECE].setHidden();
+                }
+            }
+
             switch (_rideConstructionState)
             {
                 case RideConstructionState::front:
@@ -2481,6 +2511,73 @@ namespace OpenRCT2::Ui::Windows
                 }
                 WindowRideConstructionUpdateActiveElements();
             }
+        }
+
+        TrackElemType GetAlternateTrackPiece(TrackElemType trackType)
+        {
+            if (IsTrackEnabled(TrackGroup::slopeSteepLong))
+            {
+                switch (trackType)
+                {
+                    case TrackElemType::flatToUp60:
+                        return TrackElemType::flatToUp60LongBase;
+                    case TrackElemType::up60ToFlat:
+                        return TrackElemType::up60ToFlatLongBase;
+                    case TrackElemType::flatToDown60:
+                        return TrackElemType::flatToDown60LongBase;
+                    case TrackElemType::down60ToFlat:
+                        return TrackElemType::down60ToFlatLongBase;
+                }
+            }
+            if (IsTrackEnabled(TrackGroup::diagSlopeSteepLong))
+            {
+                switch (trackType)
+                {
+                    case TrackElemType::diagFlatToUp60:
+                        return TrackElemType::diagFlatToUp60LongBase;
+                    case TrackElemType::diagUp60ToFlat:
+                        return TrackElemType::diagUp60ToFlatLongBase;
+                    case TrackElemType::diagFlatToDown60:
+                        return TrackElemType::diagFlatToDown60LongBase;
+                    case TrackElemType::diagDown60ToFlat:
+                        return TrackElemType::diagDown60ToFlatLongBase;
+                }
+            }
+            if (IsTrackEnabled(TrackGroup::flatToSteepSlope))
+            {
+                switch (trackType)
+                {
+                    case TrackElemType::flatToUp60LongBase:
+                        return TrackElemType::flatToUp60;
+                    case TrackElemType::up60ToFlatLongBase:
+                        return TrackElemType::up60ToFlat;
+                    case TrackElemType::flatToDown60LongBase:
+                        return TrackElemType::flatToDown60;
+                    case TrackElemType::down60ToFlatLongBase:
+                        return TrackElemType::down60ToFlat;
+                }
+            }
+            if (IsTrackEnabled(TrackGroup::diagSlopeSteepUp))
+            {
+                switch (trackType)
+                {
+                    case TrackElemType::diagFlatToUp60LongBase:
+                        return TrackElemType::diagFlatToUp60;
+                    case TrackElemType::diagUp60ToFlatLongBase:
+                        return TrackElemType::diagUp60ToFlat;
+                }
+            }
+            if (IsTrackEnabled(TrackGroup::diagSlopeSteepDown))
+            {
+                switch (trackType)
+                {
+                    case TrackElemType::diagFlatToDown60LongBase:
+                        return TrackElemType::diagFlatToDown60;
+                    case TrackElemType::diagDown60ToFlatLongBase:
+                        return TrackElemType::diagDown60ToFlat;
+                }
+            }
+            return TrackElemType::none;
         }
 
         void UpdateLiftHillSelected(TrackPitch slope)
@@ -4826,7 +4923,7 @@ namespace OpenRCT2::Ui::Windows
         if (ride == nullptr)
             return true;
 
-        if (IsTrackEnabled(TrackGroup::slopeSteepLong))
+        if (IsTrackEnabled(TrackGroup::slopeSteepLong) && !IsTrackEnabled(TrackGroup::flatToSteepSlope))
         {
             switch (trackType)
             {
@@ -4851,7 +4948,7 @@ namespace OpenRCT2::Ui::Windows
             }
         }
 
-        if (IsTrackEnabled(TrackGroup::diagSlopeSteepLong))
+        if (IsTrackEnabled(TrackGroup::diagSlopeSteepLong) && !IsTrackEnabled(TrackGroup::diagSlopeSteepUp))
         {
             switch (trackType)
             {
@@ -4862,7 +4959,12 @@ namespace OpenRCT2::Ui::Windows
                 case TrackElemType::diagUp60ToFlat:
                     trackType = TrackElemType::diagUp60ToFlatLongBase;
                     break;
-
+            }
+        }
+        if (IsTrackEnabled(TrackGroup::diagSlopeSteepLong) && !IsTrackEnabled(TrackGroup::diagSlopeSteepDown))
+        {
+            switch (trackType)
+            {
                 case TrackElemType::diagFlatToDown60:
                     trackType = TrackElemType::diagFlatToDown60LongBase;
                     break;

@@ -1211,6 +1211,8 @@ enum : ImageIndex
     SPR_G2_BUTTON_PATH_ADDITIONS,
     SPR_G2_BUTTON_WALLS,
 
+    SPR_G2_BUTTON_CYCLE,
+
     SPR_G2_END,
 
     // Main palettes

@@ -666,5 +666,10 @@
         "path": "icons/walls.png",
         "x": 1,
         "y": 1
+    },
+    {
+        "path": "icons/arrow_cycle.png",
+        "x": 2,
+        "y": 2
     }
 ]
